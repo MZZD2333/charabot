@@ -1,0 +1,79 @@
+import importlib
+import inspect
+
+from pathlib import Path
+from typing import Any, Iterable, Generator, cast
+
+import yaml
+
+from chara.core.plugin import MetaData, Plugin, PluginState, Trigger
+from chara.log import style, logger
+from chara.typing import PathLike
+from chara.utils.path import is_in_env, add_to_env
+
+
+def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool = True):
+    from chara.core import PLUGINS, PLUGIN_GROUPS
+    
+    directory = Path(directory)
+
+    for path in detect_plugin_path(directory):
+        try:
+            metadata = load_plugin_metadata(path)
+            log_content = style.g('Plugin') + style.c(f'[{metadata.name}]') + style.m(f'[{metadata.version}]') + style.y(f'[{metadata.uuid}]')
+            plugin = Plugin(metadata)
+            if metadata.uuid in PLUGINS:
+                if in_worker_process:
+                    continue
+                ep = PLUGINS[metadata.uuid]
+                _log_content = style.g('Plugin') + style.c(f'[{ep.metadata.name}]') + style.m(f'[{ep.metadata.version}]') + style.y(f'[{ep.metadata.uuid}]')
+                logger.warning(log_content + ' 与 ' + _log_content + ' 具有相同的uuid. 跳过导入.')
+                continue
+            PLUGINS[metadata.uuid] = plugin
+        except:
+            logger.exception(f'错误的插件格式, 跳过导入[{path}].')
+            continue
+        
+        if not in_worker_process:
+            if group_name not in PLUGIN_GROUPS:
+                PLUGIN_GROUPS[group_name] = dict()
+            PLUGIN_GROUPS[group_name][metadata.uuid] = plugin
+            logger.info(log_content + ' 已添加至' + style.c(f'GROUP[{group_name}]') + '.')
+            continue
+
+        try:
+            if not is_in_env(directory):
+                add_to_env(directory)
+            
+            module = importlib.import_module(f'{path.parent.stem}.{path.stem}')
+            if trigger_instances := inspect.getmembers(module, lambda x: type(x) is Trigger):
+                trigger_instances = cast(Iterable[tuple[str, Trigger]], trigger_instances)
+                for instance_name, trigger in trigger_instances:
+                    if trigger.name is None:
+                        trigger.name = instance_name
+                plugin.add_trigger([t[1] for t in trigger_instances])
+            plugin.state = PluginState.WORKING
+            logger.success(log_content + style.g(' 加载成功!'))
+        
+        except:
+            plugin.state = PluginState.NOT_WORKING
+            logger.exception(log_content + style.r(' 加载失败!'))
+
+
+def load_plugin_metadata(path: PathLike) -> MetaData:
+    path = Path(path)
+    with open(path / 'plugin.yaml', 'rb') as f:
+        data = yaml.safe_load(f)
+    return MetaData(**data)
+
+
+def detect_plugin_path(directory: PathLike) -> Generator[Path, Any, None]:
+    directory = Path(directory)
+    for path in directory.iterdir():
+        if path.stem.startswith(('_', '.')):
+            continue
+        if not path.is_dir():
+            continue
+        if (path / '__init__.py').exists() and (path / 'plugin.yaml').exists():
+            yield path
+
