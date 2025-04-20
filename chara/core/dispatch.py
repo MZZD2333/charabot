@@ -46,7 +46,8 @@ class Dispatcher:
             logger.warning(f'收到错误的客户端信息.\n{_data}')
             return
         del _data
-
+        
+        await bot.update_bot_info()
         bot.connected = True
         event_bytes = pickle.dumps(BotConnectedEvent(bot.uin))
         for pipe in self.pipes:

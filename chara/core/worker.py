@@ -7,7 +7,7 @@ from typing import Union
 
 from chara.config import GlobalConfig, PluginConfig
 from chara.core.child import ChildProcess
-from chara.core.event import PluginStatusUpdateEvent, BotEvent, BotConnectedEvent, BotDisConnectedEvent
+from chara.core.event import PluginStatusUpdateEvent, BotEvent, BotConnectedEvent, BotDisConnectedEvent, CoreEvent
 from chara.core.plugin import Plugin
 from chara.onebot.events import Event
 
@@ -27,7 +27,7 @@ class WorkerProcess(ChildProcess):
         return WorkerProcess(self.config, self.plugin_config, self.pipe_c, self.pipe_p)
 
     def main(self):
-        from chara.core._load_plugin import load_plugins
+        from chara.core.plugin._load import load_plugins
         from chara.core.param import PLUGINS
         
         load_plugins(self.plugin_config.directory, self.name)
@@ -36,7 +36,6 @@ class WorkerProcess(ChildProcess):
         
         
     async def _main(self):
-
         async with self._lifespan():
             try:
                 await self._loop()
@@ -51,17 +50,22 @@ class WorkerProcess(ChildProcess):
         ticks = 0
         while True:
             if self.pipe_c.poll():
-                event: Union[BotEvent, Event] = self.pipe_c.recv()
-                bot = BOTS[event.self_id]
-                if isinstance(event, BotEvent):
-                    if isinstance(event, BotConnectedEvent):
-                        bot.connected = True
-                    elif isinstance(event, BotDisConnectedEvent):
-                        bot.connected = False
+                event: Union[CoreEvent, Event] = self.pipe_c.recv()
+                
+                if isinstance(event, CoreEvent):
+                    if isinstance(event, BotEvent):
+                        bot = BOTS[event.self_id]
+                        if isinstance(event, BotConnectedEvent):
+                            bot.connected = True
+                            await bot.update_bot_info()
+                        elif isinstance(event, BotDisConnectedEvent):
+                            bot.connected = False
                     continue
-
+                
+                bot = BOTS[event.self_id]
                 for plugin in self.plugins:
                     LOOP.create_task(plugin.handle_event(bot, event))
+            
             else:
                 future = LOOP.create_future()
                 LOOP.call_later(0.05, self._tick, future)
@@ -86,18 +90,8 @@ class WorkerProcess(ChildProcess):
         await self.on_shutdown()
 
     async def on_startup(self) -> None:        
-        # import signal
-        
         from chara.core import Bot
         from chara.core.param import BOTS
-
-        # def close():
-        #     for task in asyncio.all_tasks():
-        #         task.cancel()
-        
-        # LOOP = asyncio.get_running_loop()
-        # print(type(LOOP))
-        # LOOP.add_signal_handler(signal.SIGTERM, close)
 
         global_data_path = self.config.data.directory
         for config in self.config.bots:

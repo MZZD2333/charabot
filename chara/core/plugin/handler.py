@@ -15,14 +15,14 @@ if TYPE_CHECKING:
     from chara.core.plugin.trigger import Trigger, TriggerCapturedData
 
 
-@dataclass(repr=False, eq=False, frozen=False, slots=True)
+@dataclass(repr=False, eq=False, slots=True)
 class Handler:
     bot: Bot
     condition: Optional[Condition]
     exc: Executor[Any]
-    tcd: 'TriggerCapturedData'
     loop: asyncio.AbstractEventLoop
-    _trigger: 'Trigger'
+    tcd: 'TriggerCapturedData'
+    trigger: 'Trigger'
     _is_running: bool = False
         
     async def send(self, message: MessageLike, at_sender: bool = False, recall_after: int = 0, user_id: Optional[int] = None, group_id: Optional[int] = None) -> str:
@@ -86,21 +86,21 @@ class Handler:
             await self.send(message, at_sender, recall_after, user_id, group_id)
         raise HandleFinished
 
-    async def __call__(self):
+    async def __call__(self) -> None:
         if self._is_running:
             # TODO: 添加日志
-            logger.warning(self._trigger._trigger_info + style.r(' catch an exception while checking handler\'s condition.')) # type: ignore
+            logger.exception(str(self.trigger) + style.r(' catch an exception while checking handler\'s condition.'))
             return
         self._is_running = True
         event = self.tcd.event
-        logger.success(self._trigger._trigger_info + ' will handle this event.') # type: ignore
+        logger.success(str(self.trigger) + ' will handle this event.')
         try:
             if self.condition and not await self.condition(event, self, self.bot, self.tcd):
                 return
         except HandleFinished:
             return
         except:
-            logger.exception(self._trigger._trigger_info + style.r(' catch an exception while checking handler\'s condition.')) # type: ignore
+            logger.exception(str(self.trigger) + style.r(' catch an exception while checking handler\'s condition.'))
             return
         
         try:
@@ -109,6 +109,6 @@ class Handler:
         except HandleFinished:
             return
         except:
-            logger.exception(self._trigger._trigger_info + style.r(' catch an exception while handler processing.')) # type: ignore
+            logger.exception(str(self.trigger) + style.r(' catch an exception while handler processing.'))
             return
-        logger.success(self._trigger._trigger_info + ' execute completely.') # type: ignore
+        logger.success(str(self.trigger) + ' execute completely.')

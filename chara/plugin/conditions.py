@@ -29,6 +29,12 @@ async def _is_call_me(bot: Bot, event: MessageEvent) -> bool:
             return True
     return False
 
+async def _bot_is_group_owner(bot: Bot, event: GroupMessageEvent) -> bool:
+    return event.group_id in bot.owner_groups
+
+async def _bot_is_group_admin(bot: Bot, event: GroupMessageEvent) -> bool:
+    return event.group_id in bot.admin_groups
+
 SUPERUSER = Condition(_is_superuser)
 '''## Config中设置的SuperUser'''
 
@@ -41,10 +47,10 @@ AT_ME = Condition(_is_at_me)
 FRIEND_PRIVATE = Condition(_is_friend)
 '''## 会话为好友私聊'''
 
-GROUP_OWNER = Condition(_is_group_owner)
+SENDER_IS_GROUP_OWNER = Condition(_is_group_owner)
 '''## 消息发送者为群主'''
 
-GROUP_ADMIN = Condition(_is_group_admin)
+SENDER_IS_GROUP_ADMIN = Condition(_is_group_admin)
 '''## 消息发送者为管理员或群主'''
 
 CALL_ME = Condition(_is_call_me)
@@ -52,6 +58,12 @@ CALL_ME = Condition(_is_call_me)
 
 TO_ME = AT_ME & CALL_ME
 '''## 消息以bot名字或昵称开头或被at或私聊消息'''
+
+BOT_IS_GROUP_OWNER = Condition(_bot_is_group_owner)
+'''## bot为收到消息群的群主'''
+
+BOT_IS_GROUP_ADMIN = Condition(_bot_is_group_admin)
+'''## bot为收到消息群的管理员或群主'''
 
 def Frequency(num: int = 1, time: float = 10, mode: Literal['group_shared', 'user_shared', 'independent'] = 'independent', prompt: Optional[MessageLike] = None) -> Condition:
     '''
@@ -172,10 +184,12 @@ __all__ = [
     'SU',
     'AT_ME',
     'FRIEND_PRIVATE',
-    'GROUP_OWNER',
-    'GROUP_ADMIN',
+    'SENDER_IS_GROUP_OWNER',
+    'SENDER_IS_GROUP_ADMIN',
     'CALL_ME',
     'TO_ME',
+    'BOT_IS_GROUP_OWNER',
+    'BOT_IS_GROUP_ADMIN',
     'Cooldown',
     'Frequency',
     'Probability',

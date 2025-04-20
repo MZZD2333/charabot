@@ -12,7 +12,7 @@ from psutil import Process as ProcessUtil
 
 from chara.config import GlobalConfig
 from chara.log import logger, set_logger_config
-from chara.core._load_plugin import load_plugins
+from chara.core.plugin._load import load_plugins
 from chara.core.child import ChildProcess
 from chara.core.dispatch import Dispatcher
 from chara.core.worker import WorkerProcess
@@ -124,6 +124,7 @@ class MainProcess:
 
     async def _on_startup(self) -> None:
         from chara.core.param import CONTEXT_LOOP
+        
         LOOP = asyncio.get_event_loop()
         CONTEXT_LOOP.set(LOOP)
         self.running = True
@@ -159,7 +160,6 @@ class MainProcess:
         try:
             set_logger_config(self.config.log)
             self.config.data.directory.mkdir(exist_ok=True)
-            print(self.config.server.webui.index)
             for group in self.config.plugins:
                 load_plugins(group.directory, group.group_name, False)
             self.server.run()

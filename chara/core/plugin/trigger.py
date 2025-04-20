@@ -28,6 +28,7 @@ class Trigger:
     '''
     ## 触发器
     '''
+
     __slots__ = ('alive', 'block', 'condition', 'handlers', 'name', 'plugin', 'priority')
     
     block: bool
@@ -45,8 +46,7 @@ class Trigger:
         self.priority = priority
         self.handlers = list()
 
-    @property
-    def _trigger_info(self) -> str:
+    def __str__(self) -> str:
         return style.lc('Trigger') + f'[{style.g(self.plugin.metadata.name)}.' + style.lm(self.name or hex(id(self))) + ']'
 
     def handle(self, func: Optional[ExecutorCallable[Any]] = None, condition: Optional[Condition] = None) -> ExecutorCallable[Any]:
@@ -89,26 +89,20 @@ class Trigger:
             else:
                 return
         except:
-            logger.exception(self._trigger_info + style.r('catch an exception while checking condition.'))
+            logger.exception(str(self) + style.r('catch an exception while checking condition.'))
             return
         finally:
             del temp_context_tcd
         
         loop = CONTEXT_LOOP.get()
         for exc, con in self.handlers:
-            loop.create_task(Handler(bot, con, exc, tcd, loop, self)())
+            loop.create_task(Handler(bot, con, exc, loop, tcd, self)())
 
 
-class TempTrigger(Trigger):
-
-    __slots__ = ('alive', 'block', 'condition', 'handlers', 'name', 'plugin', 'priority')
-
-    @property
-    def _trigger_info(self) -> str:
-        return style.lc('Trigger[temp]') + f'[{style.g(self.plugin.metadata.name)}.' + style.lm(self.name or hex(id(self))) + ']'
-
-
-class Session(TempTrigger):
+class Session(Trigger):
+    '''
+    ## 触发器(会话)
+    '''
 
     __slots__ = ('alive', 'block', 'condition', 'handlers', 'name', 'plugin', 'priority', 'gid', 'uin')
 
@@ -123,7 +117,7 @@ class Session(TempTrigger):
             raise
         self.gid = gid
         self.uin = uin
-
+        
         async def check(event: Event):
             event_dict = event.model_dump()
             gid = event_dict.get('group_id', None)
@@ -135,11 +129,10 @@ class Session(TempTrigger):
             return self.uin == uin and self.gid == gid
 
         _condition = Condition(check)
-        if condition:
+        if condition is not None:
             _condition = _condition & condition
         super().__init__(_condition, True, None, -1)
 
-    @property
-    def _trigger_info(self) -> str:
-        return style.lc('Session') + f'[{style.g(self.plugin.metadata.name)}]'
+    def __str__(self) -> str:
+        return style.lc('Trigger') + f'[{style.g(self.plugin.metadata.name)}.' + style.lm(self.name or hex(id(self))) + ']'
 

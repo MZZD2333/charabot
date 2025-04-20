@@ -1,30 +1,30 @@
+from dataclasses import dataclass
+
 from chara.core.plugin import PluginState
 
 
+@dataclass(repr=False, eq=False, slots=True)
 class CoreEvent:
-    __slots__ = ()
+    pass
 
 
+@dataclass(repr=False, eq=False, slots=True)
 class PluginStatusUpdateEvent(CoreEvent):
-    __slots__ = ('group_name', 'status')
-
-    def __init__(self, group_name: str, status: dict[str, PluginState]) -> None:
-        self.group_name = group_name
-        self.status = status
+    group_name: str
+    status: dict[str, PluginState]
 
 
+@dataclass(repr=False, eq=False, slots=True)
 class BotEvent(CoreEvent):
-    __slots__ = ('self_id', )
-    
-    def __init__(self, self_id: int) -> None:
-        self.self_id = self_id
+    self_id: int
 
 
+@dataclass(repr=False, eq=False, slots=True)
 class BotConnectedEvent(BotEvent):
-    __slots__ = ('self_id', )
+    pass
 
 
+@dataclass(repr=False, eq=False, slots=True)
 class BotDisConnectedEvent(BotEvent):
-    __slots__ = ('self_id', )
-
+    pass
 
