@@ -7,6 +7,7 @@ from httpx import AsyncClient, ByteStream, Headers, Request, TimeoutException, U
 
 from chara.config import BotConfig
 from chara.exception import APICallFailed
+from chara.log import style, logger
 from chara.onebot.api import API
 from chara.onebot.message import MessageJSONEncoder
 
@@ -55,11 +56,21 @@ class Bot(API):
                 if (ct - st) < cache_retention_time:
                     self.load_bot_info()
                     return
-        self.group_list = await self.get_group_list()
-        self.friend_list = await self.get_friend_list()
-        self.groups = [g['group_id'] for g in self.group_list]
-        self.friends = [f['user_id'] for f in self.friend_list]
-        self.save_bot_info()
+        try:
+            self.group_list = await self.get_group_list()
+            self.friend_list = await self.get_friend_list()
+            self.groups = [g['group_id'] for g in self.group_list]
+            self.friends = [f['user_id'] for f in self.friend_list]
+            for group_id in self.groups:
+                result = await self.get_group_member_info(group_id=group_id, user_id=self.uin)
+                role = result.get('role', None)
+                if role == 'owner':
+                    self.owner_groups.append(group_id)
+                elif role == 'admin':
+                    self.admin_groups.append(group_id)
+            self.save_bot_info()
+        except APICallFailed:
+            logger.exception(f'更新{style.g(self.name)}' + style.c(f'[{self.uin}]') + '数据时发生错误')
     
     def save_bot_info(self):
         '''## 保存bot信息'''
@@ -79,14 +90,13 @@ class Bot(API):
         path = next(self.data_path.rglob('info_*.json'), None)
         if path is None:
             return None
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding='UTF-8'))
         self.groups = data['groups']
         self.friends = data['friends']
         self.group_list = data['group_list']
         self.friend_list = data['friend_list']
         self.owner_groups = data['owner_groups']
         self.admin_groups = data['admin_groups']
-        
 
     async def call_api(self, api: str, **data: Any) -> Optional[dict[Any, Any]]:
         '''## 调用API'''

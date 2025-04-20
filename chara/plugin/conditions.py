@@ -12,15 +12,6 @@ async def _is_superuser(bot: Bot, event: MessageEvent) -> bool:
 async def _is_at_me(event: Event) -> bool:
     return event.at_me
 
-async def _is_friend(event: PrivateMessageEvent) -> bool:
-    return event.sub_type == 'friend'
-
-async def _is_group_owner(event: MessageEvent) -> bool:
-    return event.sender.role == 'owner'
-
-async def _is_group_admin(event: MessageEvent) -> bool:
-    return event.sender.role in ('admin', 'owner')
-
 async def _is_call_me(bot: Bot, event: MessageEvent) -> bool:
     if event.pure_text.startswith(bot.name):
         return True
@@ -29,11 +20,35 @@ async def _is_call_me(bot: Bot, event: MessageEvent) -> bool:
             return True
     return False
 
+async def _is_friend(bot: Bot, event: MessageEvent) -> bool:
+    return event.sub_type == 'friend' or event.user_id in bot.friends
+
+async def _is_friend_private(event: PrivateMessageEvent) -> bool:
+    return event.sub_type == 'friend'
+
+async def _sender_is_group_owner(event: GroupMessageEvent) -> bool:
+    return event.sender.role == 'owner'
+
+async def _sender_is_group_admin(event: GroupMessageEvent) -> bool:
+    return event.sender.role == 'admin'
+
+async def _sender_is_group_member(event: GroupMessageEvent) -> bool:
+    return event.sender.role == 'member'
+
+async def _sender_is_group_owner_or_admin(event: GroupMessageEvent) -> bool:
+    return event.sender.role == 'owner' or event.sender.role == 'admin'
+
 async def _bot_is_group_owner(bot: Bot, event: GroupMessageEvent) -> bool:
     return event.group_id in bot.owner_groups
 
 async def _bot_is_group_admin(bot: Bot, event: GroupMessageEvent) -> bool:
     return event.group_id in bot.admin_groups
+
+async def _bot_is_group_member(bot: Bot, event: GroupMessageEvent) -> bool:
+    return event.group_id not in bot.owner_groups or event.group_id not in bot.admin_groups
+
+async def _bot_is_group_owner_or_admin(bot: Bot, event: GroupMessageEvent) -> bool:
+    return event.group_id in bot.owner_groups or event.group_id in bot.admin_groups
 
 SUPERUSER = Condition(_is_superuser)
 '''## Config中设置的SuperUser'''
@@ -44,26 +59,42 @@ SU = SUPERUSER
 AT_ME = Condition(_is_at_me)
 '''## bot被at或私聊消息'''
 
-FRIEND_PRIVATE = Condition(_is_friend)
-'''## 会话为好友私聊'''
-
-SENDER_IS_GROUP_OWNER = Condition(_is_group_owner)
-'''## 消息发送者为群主'''
-
-SENDER_IS_GROUP_ADMIN = Condition(_is_group_admin)
-'''## 消息发送者为管理员或群主'''
-
 CALL_ME = Condition(_is_call_me)
 '''## 消息以bot名字或昵称开头'''
 
 TO_ME = AT_ME & CALL_ME
 '''## 消息以bot名字或昵称开头或被at或私聊消息'''
 
-BOT_IS_GROUP_OWNER = Condition(_bot_is_group_owner)
+FRIEND = Condition(_is_friend)
+'''## 发送者为好友'''
+
+FRIEND_PRIVATE = Condition(_is_friend_private)
+'''## 会话为好友私聊'''
+
+SP_0 = Condition(_sender_is_group_owner)
+'''## 消息发送者为群主'''
+
+SP_1 = Condition(_sender_is_group_owner_or_admin)
+'''## 消息发送者为群主或管理员'''
+
+SP_2 = Condition(_sender_is_group_admin)
+'''## 消息发送者为管理员'''
+
+SP_3 = Condition(_sender_is_group_member)
+'''## 消息发送者为普通群员'''
+
+BP_0 = Condition(_bot_is_group_owner)
 '''## bot为收到消息群的群主'''
 
-BOT_IS_GROUP_ADMIN = Condition(_bot_is_group_admin)
-'''## bot为收到消息群的管理员或群主'''
+BP_1 = Condition(_bot_is_group_owner_or_admin)
+'''## bot为收到消息群的群主或管理员'''
+
+BP_2 = Condition(_bot_is_group_admin)
+'''## bot为收到消息群的管理员'''
+
+BP_3 = Condition(_bot_is_group_member)
+'''## bot为收到消息群的普通群员'''
+
 
 def Frequency(num: int = 1, time: float = 10, mode: Literal['group_shared', 'user_shared', 'independent'] = 'independent', prompt: Optional[MessageLike] = None) -> Condition:
     '''
@@ -183,13 +214,18 @@ __all__ = [
     'SUPERUSER',
     'SU',
     'AT_ME',
-    'FRIEND_PRIVATE',
-    'SENDER_IS_GROUP_OWNER',
-    'SENDER_IS_GROUP_ADMIN',
     'CALL_ME',
     'TO_ME',
-    'BOT_IS_GROUP_OWNER',
-    'BOT_IS_GROUP_ADMIN',
+    'FRIEND',
+    'FRIEND_PRIVATE',
+    'SP_0',
+    'SP_1',
+    'SP_2',
+    'SP_3',
+    'BP_0',
+    'BP_1',
+    'BP_2',
+    'BP_3',
     'Cooldown',
     'Frequency',
     'Probability',

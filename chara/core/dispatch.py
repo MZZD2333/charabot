@@ -36,7 +36,7 @@ class Dispatcher:
         _data: dict[str, Any] = await websocket.receive_json()
         if _event := get_event(_data):
             if bot := BOTS.get(_event.self_id, None):
-                logger.success(f'连接至 {bot.name}[{bot.uin}].')
+                logger.success(f'连接至 {style.g(bot.name)}' + style.c(f'[{bot.uin}]') + '.')
                 log_event(_event)
             else:
                 logger.warning(f'与配置文件不相符的账号[{_event.self_id}], 请检测配置文件.')
