@@ -8,7 +8,6 @@ from typing import Union
 from chara.config import GlobalConfig, PluginConfig
 from chara.core.child import ChildProcess
 from chara.core.event import PluginStatusUpdateEvent, BotEvent, BotConnectedEvent, BotDisConnectedEvent, CoreEvent
-from chara.core.plugin import Plugin
 from chara.onebot.events import Event
 
 
@@ -21,26 +20,23 @@ class WorkerProcess(ChildProcess):
         self.name = self.plugin_config.group_name
         self.pipe_c = pipe_c
         self.pipe_p = pipe_p
-        self.plugins: list[Plugin] = list()
     
     def new(self) -> ChildProcess:
         return WorkerProcess(self.config, self.plugin_config, self.pipe_c, self.pipe_p)
 
     def main(self):
         from chara.core.plugin._load import load_plugins
-        from chara.core.param import PLUGINS
         
         load_plugins(self.plugin_config.directory, self.name)
-        self.plugins = list(PLUGINS.values())
-        asyncio.run(self._main())
+        try:
+            asyncio.run(self._main())
+        except:
+            asyncio.run(self.on_shutdown())
         
         
     async def _main(self):
         async with self._lifespan():
-            try:
-                await self._loop()
-            except EOFError:
-                pass
+            await self._loop()
     
     async def _loop(self):
         from chara.core.param import BOTS, CONTEXT_LOOP, PLUGINS
@@ -58,13 +54,17 @@ class WorkerProcess(ChildProcess):
                         if isinstance(event, BotConnectedEvent):
                             bot.connected = True
                             await bot.update_bot_info()
+                            for plugin in PLUGINS.values():
+                                LOOP.create_task(plugin._handle_task_on_bot_connect(bot)) # type: ignore
                         elif isinstance(event, BotDisConnectedEvent):
                             bot.connected = False
+                            for plugin in PLUGINS.values():
+                                LOOP.create_task(plugin._handle_task_on_bot_disconnect(bot)) # type: ignore
                     continue
                 
                 bot = BOTS[event.self_id]
-                for plugin in self.plugins:
-                    LOOP.create_task(plugin.handle_event(bot, event))
+                for plugin in PLUGINS.values():
+                    LOOP.create_task(plugin._handle_event(bot, event)) # type: ignore
             
             else:
                 future = LOOP.create_future()
@@ -90,8 +90,8 @@ class WorkerProcess(ChildProcess):
         await self.on_shutdown()
 
     async def on_startup(self) -> None:        
-        from chara.core import Bot
-        from chara.core.param import BOTS
+        from chara.core.bot import Bot
+        from chara.core.param import BOTS, PLUGINS
 
         global_data_path = self.config.data.directory
         for config in self.config.bots:
@@ -100,9 +100,16 @@ class WorkerProcess(ChildProcess):
             bot.global_data_path = global_data_path
             bot.data_path.mkdir(exist_ok=True)
             BOTS[config.uin] = bot
-
+        
+        LOOP = asyncio.get_event_loop()
+        for plugin in PLUGINS.values():
+            LOOP.create_task(plugin._handle_task_on_load()) # type: ignore
 
     async def on_shutdown(self) -> None:
-        pass
+        from chara.core.param import PLUGINS
+        
+        LOOP = asyncio.get_event_loop()
+        for plugin in PLUGINS.values():
+            LOOP.create_task(plugin._handle_task_on_shutdown()) # type: ignore
 
 

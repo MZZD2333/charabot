@@ -17,6 +17,7 @@ LINUX_PLATFORM: bool = sys.platform.startswith('linux')
 MACOS_PLATFORM: bool = sys.platform.startswith('darwin')
 
 BOTS: dict[int, 'Bot'] = dict()
+'''## 所有bot实例'''
 
 PLUGINS: dict[str, 'Plugin'] = dict()
 '''## 当前分组下的插件'''

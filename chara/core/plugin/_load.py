@@ -1,18 +1,31 @@
 import importlib
 import inspect
 
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Iterable, Generator, cast
 
 import yaml
 
-from chara.core.plugin import MetaData, Plugin, PluginState, Trigger
+from chara.core.plugin.plugin import MetaData, Plugin, PluginState, Trigger
 from chara.log import style, logger
 from chara.typing import PathLike
 from chara.utils.path import is_in_env, add_to_env
 
 
-def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool = True):
+_CURRENT_PLUGIN: ContextVar[Plugin] = ContextVar('CURRENT_PLUGIN')
+_ON_LOADING: ContextVar[bool] = ContextVar('ON_LOADING', default=False)
+
+def current_plugin() -> Plugin:
+    '''
+    ## 获取当前插件(仅插件导入时可调用)
+    '''
+    if _ON_LOADING.get():
+        return _CURRENT_PLUGIN.get()
+    raise Exception('仅插件导入时可用.')
+
+
+def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool = True) -> None:
     from chara.core import PLUGINS, PLUGIN_GROUPS
     
     directory = Path(directory)
@@ -41,10 +54,11 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
             logger.info(log_content + ' 已添加至' + style.c(f'GROUP[{group_name}]') + '.')
             continue
 
+        _ON_LOADING.set(True)
+        _CURRENT_PLUGIN.set(plugin)
         try:
             if not is_in_env(directory):
                 add_to_env(directory)
-            
             module = importlib.import_module(f'{path.parent.stem}.{path.stem}')
             if trigger_instances := inspect.getmembers(module, lambda x: type(x) is Trigger):
                 trigger_instances = cast(Iterable[tuple[str, Trigger]], trigger_instances)
@@ -58,6 +72,8 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
         except:
             plugin.state = PluginState.NOT_WORKING
             logger.exception(log_content + style.r(' 加载失败!'))
+
+        _ON_LOADING.set(False)
 
 
 def load_plugin_metadata(path: PathLike) -> MetaData:

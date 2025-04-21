@@ -1,12 +1,14 @@
 from enum import IntEnum
 from packaging.version import Version
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from chara.core.bot import Bot
 from chara.core.plugin.trigger import Trigger
+from chara.lib.executor import Executor
 from chara.onebot.events import Event
+from chara.typing import ExecutorCallable
 
 
 class MetaData(BaseModel):
@@ -34,16 +36,25 @@ class PluginState(IntEnum):
 
 class Plugin:
     
-    __slots__ = ('metadata', 'triggers', 'state')
+    __slots__ = ('metadata', 'triggers', 'state', '_task_on_load', '_task_on_shutdown', '_task_on_bot_connect', '_task_on_bot_disconnect')
     
     metadata: MetaData
     triggers: list[Trigger]
     state: PluginState
     
+    _task_on_load: list[tuple[int, ExecutorCallable[Any]]]
+    _task_on_shutdown: list[tuple[int, ExecutorCallable[Any]]]
+    _task_on_bot_connect: list[tuple[int, ExecutorCallable[Any]]]
+    _task_on_bot_disconnect: list[tuple[int, ExecutorCallable[Any]]]
+    
     def __init__(self, metadata: MetaData) -> None:
         self.metadata = metadata
         self.triggers = list()
         self.state = PluginState.NOT_IMPORTED
+        self._task_on_load = list()
+        self._task_on_shutdown = list()
+        self._task_on_bot_connect = list()
+        self._task_on_bot_disconnect = list()
     
     def __str__(self) -> str:
         return f'Plugin[{self.metadata.name}][{self.metadata.version}][{self.metadata.uuid}]'
@@ -51,7 +62,36 @@ class Plugin:
     def __repr__(self) -> str:
         return f'Plugin[{self.metadata.name}][{self.metadata.version}][{self.metadata.uuid}]'
 
+    async def _handle_event(self, bot: Bot, event: Event) -> None:
+        triggers = self.triggers.copy()
+        block = False
+        for trigger in triggers:
+            if not block and await trigger.check(bot, event):
+                block = trigger.block
+
+            if not trigger.alive and trigger in self.triggers:
+                self.triggers.remove(trigger)
+    
+    async def _handle_task_on_load(self):
+        for task in self._task_on_load:
+            await task[1]()
+
+    async def _handle_task_on_shutdown(self):
+        for task in self._task_on_shutdown:
+            await task[1]()
+
+    async def _handle_task_on_bot_connect(self, bot: Bot):
+        for task in self._task_on_bot_connect:
+            await task[1](bot)
+
+    async def _handle_task_on_bot_disconnect(self, bot: Bot):
+        for task in self._task_on_bot_disconnect:
+            await task[1](bot)
+
     def add_trigger(self, trigger: list[Trigger] | Trigger) -> None:
+        '''
+        ## 添加一个触发器至当前插件
+        '''
         if isinstance(trigger, list):
             for t in trigger:
                 t.plugin = self
@@ -61,13 +101,52 @@ class Plugin:
             self.triggers.append(trigger)
         self.triggers.sort(key=lambda t: t.priority)
 
-    async def handle_event(self, bot: Bot, event: Event) -> None:
-        triggers = self.triggers.copy()
-        block = False
-        for trigger in triggers:
-            if not block and await trigger.check(bot, event):
-                block = trigger.block
+    def on_load(self, func: Optional[ExecutorCallable[Any]] = None, priority: int = 0):
+        '''
+        ## 创建一个在插件加载后执行的任务
+        '''
+        def wrap(func: ExecutorCallable[Any]):
+            self._task_on_load.append((priority, Executor(func)))
+            self._task_on_load.sort(key=lambda t: t[0])
+            return func
+        if func is not None:
+            return wrap(func)
+        else:
+            return wrap
 
-            if not trigger.alive and trigger in self.triggers:
-                self.triggers.remove(trigger)
+    def on_shutdown(self, func: Optional[ExecutorCallable[Any]] = None, priority: int = 0):
+        '''
+        ## 创建一个在进程结束前执行的任务
+        '''
+        def wrap(func: ExecutorCallable[Any]):
+            self._task_on_shutdown.append((priority, Executor(func)))
+            self._task_on_shutdown.sort(key=lambda t: t[0])
+            return func
+        if func is not None:
+            return wrap(func)
+        else:
+            return wrap
 
+    def on_bot_connect(self, func: Optional[ExecutorCallable[Any]] = None, priority: int = 0):
+        '''
+        ## 创建一个连接至bot后执行的任务
+        '''
+        def wrap(func: ExecutorCallable[Any]):
+            self._task_on_bot_connect.append((priority, Executor(func)))
+            return func
+        if func is not None:
+            return wrap(func)
+        else:
+            return wrap
+
+    def on_bot_disconnect(self, func: Optional[ExecutorCallable[Any]] = None, priority: int = 0):
+        '''
+        ## 创建一个与bot断开连接后执行的任务
+        '''
+        def wrap(func: ExecutorCallable[Any]):
+            self._task_on_bot_disconnect.append((priority, Executor(func)))
+            return func
+        if func is not None:
+            return wrap(func)
+        else:
+            return wrap
