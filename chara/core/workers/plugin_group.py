@@ -13,7 +13,7 @@ from chara.onebot.events import Event
 class PluginGroupProcess(WorkerProcess):
     
     def __init__(self, config: GlobalConfig, plugin_config: PluginConfig, pipe_c: Union[Connection, PipeConnection], pipe_p: Union[Connection, PipeConnection]) -> None:
-        super().__init__(config, self.plugin_config.group_name)
+        super().__init__(config, plugin_config.group_name)
         self.config = config
         self.plugin_config = plugin_config
         self.pipe_c = pipe_c
