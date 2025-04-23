@@ -1,13 +1,13 @@
 from chara.core.bot import Bot
-from chara.core.child import ChildProcess
 from chara.core.main import MainProcess
 from chara.core.param import *
+from chara.core.workers import WorkerProcess
 
 
 
 __all__ = [
     'Bot',
-    'ChildProcess',
+    'WorkerProcess',
     'MainProcess',
     'WINDOWS_PLATFORM',
     'LINUX_PLATFORM',

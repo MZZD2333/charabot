@@ -1,4 +1,5 @@
 import asyncio
+import signal
 
 from contextlib import asynccontextmanager
 from multiprocessing import current_process
@@ -12,21 +13,22 @@ from psutil import Process as ProcessUtil
 
 from chara.config import GlobalConfig
 from chara.log import logger, set_logger_config
+from chara.core.main.dispatch import Dispatcher
 from chara.core.plugin._load import load_plugins
-from chara.core.child import ChildProcess
-from chara.core.dispatch import Dispatcher
-from chara.core.worker import WorkerProcess
+from chara.core.param import WINDOWS_PLATFORM
+from chara.core.workers import PluginGroupProcess, WorkerProcess
 
+
+_RESTARTING_PROCESS: list[str] = list()
 
 class _ChildProcess:
     
     __slots__ = ('process', 'util')
 
-    cpu_core: int
-    process: ChildProcess
+    process: WorkerProcess
     util: ProcessUtil
     
-    def __init__(self, process: ChildProcess) -> None:
+    def __init__(self, process: WorkerProcess) -> None:
         self.process = process
 
     @property
@@ -46,17 +48,20 @@ class _ChildProcess:
         return {'pid': pid, 'cpu': cpu, 'mem': mem, 'name': name}
 
     def close(self) -> None:
-        try:
-            self.process.kill()
-        except:
-            self.process.kill()
+        if WINDOWS_PLATFORM:
+            self.util.send_signal(signal.CTRL_C_EVENT)
+        else:
+            self.util.send_signal(signal.SIGINT)
+        self.process.join()
 
     def restart(self) -> None:
+        _RESTARTING_PROCESS.append(self.process.name)
         self.close()
         process = self.process.new()
         del self.process
         self.process = process
         self.start()
+        _RESTARTING_PROCESS.remove(self.process.name)
 
 
 class MainProcess:
@@ -99,28 +104,19 @@ class MainProcess:
                 **config.module.uvicorn.model_dump()
             )
         )
-        self.child_processes = dict()
-        self.config = config
-        self.running = False
-        self.process = current_process()
-        self.process_util = ProcessUtil(self.process.pid)
-        self._set_worker() 
-        self._set_lifespan()
-
-    def _set_worker(self):
-        for group in self.config.plugins:
-            pipe_c, pipe_p = Pipe()
-            worker_process = WorkerProcess(self.config, group, pipe_c, pipe_p)
-            self.add_process(group.group_name, worker_process)
-            
-
-    def _set_lifespan(self) -> None:
+        
         @asynccontextmanager
         async def lifespan(app: FastAPI):
             await self._on_startup()
             yield
             await self._on_shutdown()
+        
         self.app.router.lifespan_context = lifespan
+        self.child_processes = dict()
+        self.config = config
+        self.running = False
+        self.process = current_process()
+        self.process_util = ProcessUtil(self.process.pid)
 
     async def _on_startup(self) -> None:
         from chara.core.param import CONTEXT_LOOP
@@ -128,9 +124,9 @@ class MainProcess:
         LOOP = asyncio.get_event_loop()
         CONTEXT_LOOP.set(LOOP)
         self.running = True
-        logger.success(f'主进程启动 [PID: {self.process.pid}].')
         for process in self.child_processes.values():
-            process.start()
+            if not process.is_alive:
+                process.start()
 
         self.dispatcher.update_pipes([cp.process for cp in self.child_processes.values()])
         LOOP.create_task(self.dispatcher.event_loop())
@@ -138,10 +134,11 @@ class MainProcess:
     async def _on_shutdown(self) -> None:
         self.running = False
         for process in self.child_processes.values():
-            process.close()
-        logger.success(f'主进程关闭 [PID: {self.process.pid}].')
+            if process.is_alive:
+                process.close()
 
-    def add_process(self, name: str, process: ChildProcess) -> None:
+    def add_process(self, process: WorkerProcess) -> None:
+        name = process.name
         if name in self.child_processes:
             logger.warning(f'{name} 名称已存在.')
             return
@@ -156,14 +153,34 @@ class MainProcess:
             return
         self.child_processes[name].restart()
 
-    def run(self):
-        try:
-            set_logger_config(self.config.log)
-            self.config.data.directory.mkdir(exist_ok=True)
-            for group in self.config.plugins:
-                load_plugins(group.directory, group.group_name, False)
-            self.server.run()
-        except KeyboardInterrupt:
-            pass
+    def run(self) -> None:
+        logger.success(f'主进程启动 [PID: {self.process.pid}].')
+        def handle_exit(sig: int, _: Any):
+            if _RESTARTING_PROCESS:
+                return
+            self.server.should_exit = True
 
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, handle_exit)
 
+        set_logger_config(self.config.log)
+        self.config.data.directory.mkdir(exist_ok=True)
+        for group in self.config.plugins:
+            load_plugins(group.directory, group.group_name, False)
+        
+        for group in self.config.plugins:
+            pipe_c, pipe_p = Pipe()
+            self.add_process(PluginGroupProcess(self.config, group, pipe_c, pipe_p))
+
+        asyncio.run(self._main())
+        logger.success(f'主进程关闭 [PID: {self.process.pid}].')
+
+    async def _main(self):
+        config = self.server.config
+        if not config.loaded:
+            config.load()
+        self.server.lifespan = config.lifespan_class(config)
+        await self.server.startup()
+        await self.server.main_loop()
+        await self.server.shutdown()
+        

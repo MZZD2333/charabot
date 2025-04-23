@@ -9,10 +9,9 @@ from fastapi import APIRouter
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
 from chara.config import GlobalConfig
-from chara.core.child import ChildProcess
 from chara.core.event import CoreEvent, PluginStatusUpdateEvent, BotConnectedEvent, BotDisConnectedEvent
 from chara.core.param import BOTS, CONTEXT_LOOP, PLUGINS, PLUGIN_GROUPS
-from chara.core.worker import WorkerProcess
+from chara.core.workers import PluginGroupProcess, WorkerProcess
 from chara.lib.tree import Node
 from chara.log import style, logger
 from chara.onebot.events import Event, GroupMessageEvent, MessageEvent, MetaEvent, NoticeEvent, RequestEvent
@@ -33,19 +32,19 @@ class Dispatcher:
     async def _handle_websocket(self, websocket: WebSocket) -> None:
         await websocket.accept()
         
-        _data: dict[str, Any] = await websocket.receive_json()
-        if _event := get_event(_data):
-            if bot := BOTS.get(_event.self_id, None):
+        data: dict[str, Any] = await websocket.receive_json()
+        if event := get_event(data):
+            if bot := BOTS.get(event.self_id, None):
                 logger.success(f'连接至 {style.g(bot.name)}' + style.c(f'[{bot.uin}]') + '.')
-                log_event(_event)
+                log_event(event)
             else:
-                logger.warning(f'与配置文件不相符的账号[{_event.self_id}], 请检测配置文件.')
+                logger.warning(f'与配置文件不相符的账号[{event.self_id}], 请检测配置文件.')
                 return
-            del _event
+            del event
         else:
-            logger.warning(f'收到错误的客户端信息.\n{_data}')
+            logger.warning(f'收到错误的客户端信息.\n{data}')
             return
-        del _data
+        del data
         
         await bot.update_bot_info()
         bot.connected = True
@@ -96,10 +95,10 @@ class Dispatcher:
         except:
             pass
     
-    def update_pipes(self, processes: list[ChildProcess]) -> None:
+    def update_pipes(self, processes: list[WorkerProcess]) -> None:
         pipes: list[Union[Connection, PipeConnection]] = list()
         for process in processes:
-            if isinstance(process, WorkerProcess) and process.is_alive():
+            if isinstance(process, PluginGroupProcess) and process.is_alive():
                 pipes.append(process.pipe_p)
         self.pipes = pipes
 

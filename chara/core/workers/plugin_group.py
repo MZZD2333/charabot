@@ -1,53 +1,41 @@
 import asyncio
 import pickle
 
-from contextlib import asynccontextmanager
 from multiprocessing.connection import Connection, PipeConnection
 from typing import Union
 
 from chara.config import GlobalConfig, PluginConfig
-from chara.core.child import ChildProcess
+from chara.core.workers.worker import WorkerProcess
 from chara.core.event import PluginStatusUpdateEvent, BotEvent, BotConnectedEvent, BotDisConnectedEvent, CoreEvent
 from chara.onebot.events import Event
 
 
-class WorkerProcess(ChildProcess):
+class PluginGroupProcess(WorkerProcess):
     
     def __init__(self, config: GlobalConfig, plugin_config: PluginConfig, pipe_c: Union[Connection, PipeConnection], pipe_p: Union[Connection, PipeConnection]) -> None:
-        super().__init__(config)
+        super().__init__(config, self.plugin_config.group_name)
         self.config = config
         self.plugin_config = plugin_config
-        self.name = self.plugin_config.group_name
         self.pipe_c = pipe_c
         self.pipe_p = pipe_p
-    
-    def new(self) -> ChildProcess:
-        return WorkerProcess(self.config, self.plugin_config, self.pipe_c, self.pipe_p)
 
-    def main(self):
-        from chara.core.plugin._load import load_plugins
-        
-        load_plugins(self.plugin_config.directory, self.name)
+    def _tick(self, future: asyncio.Future[None]):
         try:
-            asyncio.run(self._main())
+            future.set_result(None)
         except:
-            asyncio.run(self.on_shutdown())
-        
-        
-    async def _main(self):
-        async with self._lifespan():
-            await self._loop()
-    
-    async def _loop(self):
+            pass
+
+    async def main(self) -> None:
         from chara.core.param import BOTS, CONTEXT_LOOP, PLUGINS
 
         LOOP = asyncio.get_event_loop()
         CONTEXT_LOOP.set(LOOP)
+        
         ticks = 0
-        while True:
+        while not self.should_exit:
+            ticks += 1
             if self.pipe_c.poll():
                 event: Union[CoreEvent, Event] = self.pipe_c.recv()
-                
                 if isinstance(event, CoreEvent):
                     if isinstance(event, BotEvent):
                         bot = BOTS[event.self_id]
@@ -68,31 +56,20 @@ class WorkerProcess(ChildProcess):
             
             else:
                 future = LOOP.create_future()
-                LOOP.call_later(0.05, self._tick, future)
+                LOOP.call_later(0.1, self._tick, future)
                 await future
             
-            ticks += 1
             if ticks % 100 == 0:
                 ticks = 0
                 event_bytes = pickle.dumps(PluginStatusUpdateEvent(self.name, {plugin.metadata.uuid: plugin.state for plugin in PLUGINS.values()}))
                 self.pipe_c.send_bytes(event_bytes)
-    
-    def _tick(self, future: asyncio.Future[None]):
-        try:
-            future.set_result(None)
-        except:
-            pass
 
-    @asynccontextmanager
-    async def _lifespan(self):
-        await self.on_startup()
-        yield
-        await self.on_shutdown()
-
-    async def on_startup(self) -> None:        
+    async def startup(self) -> None:
         from chara.core.bot import Bot
         from chara.core.param import BOTS, PLUGINS
+        from chara.core.plugin._load import load_plugins
 
+        load_plugins(self.plugin_config.directory, self.name)
         global_data_path = self.config.data.directory
         for config in self.config.bots:
             bot = Bot(config)
@@ -105,11 +82,13 @@ class WorkerProcess(ChildProcess):
         for plugin in PLUGINS.values():
             LOOP.create_task(plugin._handle_task_on_load()) # type: ignore
 
-    async def on_shutdown(self) -> None:
+    async def shutdown(self) -> None:
         from chara.core.param import PLUGINS
         
         LOOP = asyncio.get_event_loop()
         for plugin in PLUGINS.values():
             LOOP.create_task(plugin._handle_task_on_shutdown()) # type: ignore
 
+    def new(self) -> 'PluginGroupProcess':
+        return PluginGroupProcess(self.config, self.plugin_config, self.pipe_c, self.pipe_p)
 
