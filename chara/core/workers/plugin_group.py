@@ -4,7 +4,7 @@ import pickle
 from multiprocessing.connection import Connection, PipeConnection
 from typing import Union
 
-from chara.config import GlobalConfig, PluginConfig
+from chara.config import GlobalConfig, PluginGroupConfig
 from chara.core.workers.worker import WorkerProcess
 from chara.core.event import PluginStatusUpdateEvent, BotEvent, BotConnectedEvent, BotDisConnectedEvent, CoreEvent
 from chara.onebot.events import Event
@@ -12,10 +12,10 @@ from chara.onebot.events import Event
 
 class PluginGroupProcess(WorkerProcess):
     
-    def __init__(self, config: GlobalConfig, plugin_config: PluginConfig, pipe_c: Union[Connection, PipeConnection], pipe_p: Union[Connection, PipeConnection]) -> None:
-        super().__init__(config, plugin_config.group_name)
+    def __init__(self, config: GlobalConfig, group_config: PluginGroupConfig, pipe_c: Union[Connection, PipeConnection], pipe_p: Union[Connection, PipeConnection]) -> None:
+        super().__init__(config, group_config.group_name)
         self.config = config
-        self.plugin_config = plugin_config
+        self.group_config = group_config
         self.pipe_c = pipe_c
         self.pipe_p = pipe_p
 
@@ -66,10 +66,14 @@ class PluginGroupProcess(WorkerProcess):
 
     async def startup(self) -> None:
         from chara.core.bot import Bot
-        from chara.core.param import BOTS, PLUGINS
+        from chara.core.param import BOTS, PLUGINS, CONTEXT_GLOBAL_CONFIG, CONTEXT_LOOP, CONTEXT_PLUGIN_GROUP_CONFIG
         from chara.core.plugin._load import load_plugins
-
-        load_plugins(self.plugin_config.directory, self.name)
+        
+        LOOP = asyncio.get_event_loop()
+        CONTEXT_GLOBAL_CONFIG.set(self.global_config)
+        CONTEXT_LOOP.set(LOOP)
+        CONTEXT_PLUGIN_GROUP_CONFIG.set(self.group_config)
+        load_plugins(self.group_config.directory, self.name)
         global_data_path = self.config.data.directory
         for config in self.config.bots:
             bot = Bot(config)
@@ -78,7 +82,6 @@ class PluginGroupProcess(WorkerProcess):
             bot.data_path.mkdir(exist_ok=True)
             BOTS[config.uin] = bot
         
-        LOOP = asyncio.get_event_loop()
         for plugin in PLUGINS.values():
             LOOP.create_task(plugin._handle_task_on_load()) # type: ignore
 
@@ -90,5 +93,5 @@ class PluginGroupProcess(WorkerProcess):
             LOOP.create_task(plugin._handle_task_on_shutdown()) # type: ignore
 
     def new(self) -> 'PluginGroupProcess':
-        return PluginGroupProcess(self.config, self.plugin_config, self.pipe_c, self.pipe_p)
+        return PluginGroupProcess(self.config, self.group_config, self.pipe_c, self.pipe_p)
 

@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 import yaml
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
 class _BaseConfig(BaseModel):
@@ -35,12 +35,22 @@ class WebSocketConfig(_BaseConfig):
 class WebUIConfig(_BaseConfig):
     enable: bool
     path: str
-    directory: Path
+    assets: Path
+    static: Path
     index: str
 
-    @field_validator('directory', mode='before')
-    def _field_validator_directory(cls, raw_path: str) -> Path:
+    @field_validator('assets', mode='before')
+    def _field_validator_assets(cls, raw_path: str) -> Path:
         return Path(raw_path)
+
+    @field_validator('static', mode='before')
+    def _field_validator_static_before(cls, raw_path: str) -> Path:
+        return Path(raw_path)
+
+    @model_validator(mode='after')
+    def _(self) -> 'WebUIConfig':
+        self.static = self.assets / self.static
+        return self
 
 
 class ServerConfig(_BaseConfig):
@@ -51,7 +61,7 @@ class ServerConfig(_BaseConfig):
     webui: WebUIConfig
 
 
-class PluginConfig(_BaseConfig):
+class PluginGroupConfig(_BaseConfig):
     group_name: str
     directory: Path
 
@@ -88,7 +98,7 @@ class GlobalConfig(_BaseConfig):
     data: DataConfig
     bots: list[BotConfig]
     server: ServerConfig
-    plugins: list[PluginConfig]
+    plugins: list[PluginGroupConfig]
     module: ModuleConfig
     log: LogConfig
 
@@ -139,7 +149,9 @@ server:
   webui:
     enable: true
     path: /web-ui
-    directory: ./
+    assets: ./assets
+    # static 需在 assets 目录下
+    static: static
     index: index.html
 
 # 插件配置
@@ -163,11 +175,4 @@ log:
   level: info
 
 '''
-
-
-
-
-
-
-
 

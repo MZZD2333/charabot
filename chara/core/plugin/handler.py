@@ -42,15 +42,15 @@ class Handler:
         event_dict = self.tcd.event.model_dump()
         
         params: dict[str, Any] = dict()
-        group_id = event_dict.get('group_id', None)
-        user_id = event_dict.get('user_id', None)
+        group_id = event_dict.get('group_id', group_id)
+        user_id = event_dict.get('user_id', user_id)
         if group_id:
             params['group_id'] = group_id
         elif user_id:
             params['user_id'] = user_id
         else:
-            # TODO: 添加日志
-            raise
+            logger.warning(f'获取user_id或group_id失败. 当前事件: {event_dict}')
+            raise HandleFinished
         message = Message(message)
         if at_sender and group_id and user_id:
             message = MessageSegment.at(str(user_id)) + message
@@ -88,19 +88,18 @@ class Handler:
 
     async def __call__(self) -> None:
         if self._is_running:
-            # TODO: 添加日志
-            logger.exception(str(self.trigger) + style.r(' catch an exception while checking handler\'s condition.'))
+            logger.warning(str(self.trigger) + style.r(' 不可循环调用Handler.'))
             return
         self._is_running = True
         event = self.tcd.event
-        logger.success(str(self.trigger) + ' will handle this event.')
+        logger.success(str(self.trigger) + ' 将处理这个事件.')
         try:
             if self.condition and not await self.condition(event, self, self.bot, self.tcd):
                 return
         except HandleFinished:
             return
         except:
-            logger.exception(str(self.trigger) + style.r(' catch an exception while checking handler\'s condition.'))
+            logger.exception(str(self.trigger) + style.r(' 在检查Handler自身条件时捕发生异常.'))
             return
         
         try:
@@ -109,6 +108,6 @@ class Handler:
         except HandleFinished:
             return
         except:
-            logger.exception(str(self.trigger) + style.r(' catch an exception while handler processing.'))
+            logger.exception(str(self.trigger) + style.r(' 在Handler处理事件时发生异常.'))
             return
-        logger.success(str(self.trigger) + ' execute completely.')
+        logger.success(str(self.trigger) + ' Handler处理完毕.')

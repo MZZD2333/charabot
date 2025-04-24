@@ -89,7 +89,7 @@ class Trigger:
             else:
                 return
         except:
-            logger.exception(str(self) + style.r('catch an exception while checking condition.'))
+            logger.exception(str(self) + style.r(' 在检查自身条件时发生异常.'))
             return
         finally:
             del temp_context_tcd

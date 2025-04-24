@@ -14,7 +14,7 @@ __all__ = [
     'MACOS_PLATFORM',
     'BOTS',
     'PLUGINS',
+    'PLUGIN_GROUPS',
     'CONTEXT_LOOP',
     'CONTEXT_GLOBAL_CONFIG',
-    'CONTEXT_PLUGIN_CONFIG',
 ]

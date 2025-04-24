@@ -1,8 +1,8 @@
 from enum import IntEnum
-from packaging.version import Version
+from pathlib import Path
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
 
 from chara.core.bot import Bot
 from chara.core.plugin.trigger import Trigger
@@ -12,19 +12,15 @@ from chara.typing import ExecutorCallable
 
 
 class MetaData(BaseModel):
-    model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra='ignore')
 
     name: str
     uuid: str
     description: str
     authors: list[str]
-    version: Version
+    version: str
     icon: Optional[str] = None
     readme: Optional[str] = None
-
-    @field_validator('version', mode='before')
-    def _check_version(cls, version: str) -> Version:
-        return Version(version)
 
 
 class PluginState(IntEnum):
@@ -36,21 +32,24 @@ class PluginState(IntEnum):
 
 class Plugin:
     
-    __slots__ = ('metadata', 'triggers', 'state', '_task_on_load', '_task_on_shutdown', '_task_on_bot_connect', '_task_on_bot_disconnect')
+    __slots__ = ('group', 'metadata', 'path', 'state', 'triggers', '_task_on_load', '_task_on_shutdown', '_task_on_bot_connect', '_task_on_bot_disconnect')
     
+    group: str
     metadata: MetaData
-    triggers: list[Trigger]
+    path: Path
     state: PluginState
+    triggers: list[Trigger]
     
     _task_on_load: list[tuple[int, ExecutorCallable[Any]]]
     _task_on_shutdown: list[tuple[int, ExecutorCallable[Any]]]
     _task_on_bot_connect: list[tuple[int, ExecutorCallable[Any]]]
     _task_on_bot_disconnect: list[tuple[int, ExecutorCallable[Any]]]
     
-    def __init__(self, metadata: MetaData) -> None:
+    def __init__(self, group: str, metadata: MetaData) -> None:
+        self.group = group
         self.metadata = metadata
-        self.triggers = list()
         self.state = PluginState.NOT_IMPORTED
+        self.triggers = list()
         self._task_on_load = list()
         self._task_on_shutdown = list()
         self._task_on_bot_connect = list()
@@ -150,3 +149,4 @@ class Plugin:
             return wrap(func)
         else:
             return wrap
+

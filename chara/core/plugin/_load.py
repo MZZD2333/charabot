@@ -34,7 +34,8 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
         try:
             metadata = load_plugin_metadata(path)
             log_content = style.g('Plugin') + style.c(f'[{metadata.name}]') + style.m(f'[{metadata.version}]') + style.y(f'[{metadata.uuid}]')
-            plugin = Plugin(metadata)
+            plugin = Plugin(group_name, metadata)
+            plugin.path = path
             if metadata.uuid in PLUGINS:
                 if in_worker_process:
                     continue

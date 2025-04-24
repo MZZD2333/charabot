@@ -3,7 +3,7 @@ import pickle
 
 from itertools import chain
 from multiprocessing.connection import Connection, PipeConnection
-from typing import Any, Type, Union
+from typing import Any, Type, Union, TYPE_CHECKING
 
 from fastapi import APIRouter
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -17,17 +17,24 @@ from chara.log import style, logger
 from chara.onebot.events import Event, GroupMessageEvent, MessageEvent, MetaEvent, NoticeEvent, RequestEvent
 from chara.utils.richtext import unescape
 
+if TYPE_CHECKING:
+    from chara.core.main._main import MainProcess
+
 
 class Dispatcher:
 
-    router: APIRouter
+    __slots__ = ('config', 'pipes', 'router')
+    
+    config: GlobalConfig
     pipes: list[Union[Connection, PipeConnection]]
+    router: APIRouter
 
-    def __init__(self, config: GlobalConfig) -> None:
+    def __init__(self, main: 'MainProcess', config: GlobalConfig) -> None:
         self.config = config
         self.router = APIRouter()
         self.router.websocket_route(self.config.server.websocket.path)(self._handle_websocket)
-        
+        main.app.include_router(self.router)
+
         
     async def _handle_websocket(self, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -35,7 +42,7 @@ class Dispatcher:
         data: dict[str, Any] = await websocket.receive_json()
         if event := get_event(data):
             if bot := BOTS.get(event.self_id, None):
-                logger.success(f'连接至 {style.g(bot.name)}' + style.c(f'[{bot.uin}]') + '.')
+                logger.success(f'连接至{style.g(bot.name)}' + style.c(f'[{bot.uin}]') + '.')
                 log_event(event)
             else:
                 logger.warning(f'与配置文件不相符的账号[{event.self_id}], 请检测配置文件.')
@@ -64,11 +71,12 @@ class Dispatcher:
                         pipe.send_bytes(event_bytes)
         
         except WebSocketDisconnect:
-            logger.warning(f'断开连接 {bot.name}[{bot.uin}].')
+            logger.warning(f'与{bot.name}[{bot.uin}]断开连接.')
 
         event_bytes = pickle.dumps(BotDisConnectedEvent(bot.uin))
         for pipe in self.pipes:
             pipe.send_bytes(event_bytes)
+        
         bot.connected = False
     
     async def event_loop(self):

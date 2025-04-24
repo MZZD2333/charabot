@@ -6,7 +6,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from chara.config import GlobalConfig, PluginConfig
+    from chara.config import GlobalConfig, PluginGroupConfig
     from chara.core.bot import Bot
     from chara.core.plugin import Plugin
 
@@ -29,7 +29,7 @@ CONTEXT_LOOP: ContextVar[AbstractEventLoop] = ContextVar('loop')
 
 CONTEXT_GLOBAL_CONFIG: ContextVar['GlobalConfig'] = ContextVar('global_config')
 
-CONTEXT_PLUGIN_CONFIG: ContextVar['PluginConfig'] = ContextVar('plugin_config')
+CONTEXT_PLUGIN_GROUP_CONFIG: ContextVar['PluginGroupConfig'] = ContextVar('plugin_group_config')
 
 __all__ = [
     'WINDOWS_PLATFORM',
@@ -40,5 +40,5 @@ __all__ = [
     'PLUGIN_GROUPS',
     'CONTEXT_LOOP',
     'CONTEXT_GLOBAL_CONFIG',
-    'CONTEXT_PLUGIN_CONFIG',
+    'CONTEXT_PLUGIN_GROUP_CONFIG',
 ]
