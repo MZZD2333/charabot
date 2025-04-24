@@ -96,3 +96,4 @@ logger.addHandler(_handler)
 
 def set_logger_config(config: LogConfig):
     logger.setLevel(config.level.upper())
+

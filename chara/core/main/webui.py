@@ -27,12 +27,6 @@ class StaticFiles:
     
     def __init__(self, config: WebUIConfig) -> None:
         self.config = config
-        if not self.config.assets.exists():
-            self.config.assets.mkdir(exist_ok=True)
-            logger.warning(f'目录 {self.config.assets} 不存在, 已创建.')
-        if not self.config.static.exists():
-            self.config.static.mkdir(exist_ok=True)
-            logger.warning(f'目录 {self.config.static} 不存在, 已创建.')
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> Any:
         response = self.file_response(scope)
@@ -101,6 +95,13 @@ class WebUI:
     def __init__(self, main: 'MainProcess', config: GlobalConfig) -> None:
         self.main = main
         self.config = config.server.webui
+        if not self.config.assets.exists():
+            self.config.assets.mkdir(exist_ok=True)
+            logger.warning(f'目录 {self.config.assets} 不存在, 已创建.')
+        if not self.config.static.exists():
+            self.config.static.mkdir(exist_ok=True)
+            logger.warning(f'目录 {self.config.static} 不存在, 已创建.')
+        
         self.sf = StaticFiles(self.config)
         self.api = APIRouter(prefix='/api')
         self.web = APIRouter(prefix=self.config.path)
@@ -121,7 +122,7 @@ class WebUI:
                 logger.warning(f'web-ui入口文件({index})不存在')
             return HTMLResponse(content)
         
-        @self.api.api_route(methods=['GET', 'POST'], path='/plugin/list')
+        @self.api.post('/plugin/list')
         async def _():
             data: list[dict[str, Any]] = [
                 {
@@ -132,18 +133,20 @@ class WebUI:
                 'authors': plugin.metadata.authors,
                 'version': plugin.metadata.version,
                 'description': plugin.metadata.description,
+                'icon': plugin.metadata.icon,
+                'readme': plugin.metadata.readme,
                 }
                 for plugin in PLUGINS.values()
             ]
             return JSONResponse(data)
 
-        @self.api.api_route(methods=['GET', 'POST'], path='/plugin/group/{name}/reload')
+        @self.api.post('/plugin/group/{name}/reload')
         async def _(name: str):
             if name in PLUGIN_GROUPS:
                 if (process := self.main.workers[name]).is_alive:
                     LOOP = CONTEXT_LOOP.get()
                     LOOP.create_task(process.restart())
                     return Response(status_code=200)
-                return Response(f'插件组{name}正在重启,请勿重复调用.', status_code=400)
+                return Response(f'插件组{name}正在重启, 请勿重复调用.', status_code=400)
             return Response(f'插件组{name}不存在.', status_code=400)
 

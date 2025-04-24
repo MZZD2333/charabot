@@ -6,6 +6,7 @@ from typing import Any, Optional
 from httpx import AsyncClient, ByteStream, Headers, Request, TimeoutException, URL
 
 from chara.config import BotConfig
+from chara.core.param import CONTEXT_GLOBAL_CONFIG
 from chara.exception import APICallFailed
 from chara.log import style, logger
 from chara.onebot.api import API
@@ -41,11 +42,15 @@ class Bot(API):
         self.owner_groups = list()
         self.admin_groups = list()
         self.config = config
-        self.data_path = Path()
-        self.global_data_path = Path()
         self.connected = False
         self.client = AsyncClient(base_url=f'http://{config.http_host}:{config.http_port}')
         self.client.headers = {'Host': f'{config.http_host}:{config.http_port}'}
+        
+        group_config = CONTEXT_GLOBAL_CONFIG.get()
+        global_data_path = group_config.data.directory
+        self.data_path = global_data_path / str(config.uin)
+        self.global_data_path = global_data_path
+        self.data_path.mkdir(parents=True, exist_ok=True)
     
     async def update_bot_info(self, use_cache: bool = True, cache_retention_time: float = 86400):
         if use_cache:

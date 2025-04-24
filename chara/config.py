@@ -44,7 +44,7 @@ class WebUIConfig(_BaseConfig):
         return Path(raw_path)
 
     @field_validator('static', mode='before')
-    def _field_validator_static_before(cls, raw_path: str) -> Path:
+    def _field_validator_static(cls, raw_path: str) -> Path:
         return Path(raw_path)
 
     @model_validator(mode='after')
@@ -173,6 +173,7 @@ module:
 # 日志配置
 log:
   level: info
+
 
 '''
 

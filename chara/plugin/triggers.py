@@ -100,3 +100,4 @@ __all__ = [
     'RegexTriggerCapturedData',
     'CommandTriggerCapturedData',
 ]
+

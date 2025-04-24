@@ -1,7 +1,7 @@
 import asyncio
 import pickle
 
-from multiprocessing.connection import Connection, PipeConnection
+from multiprocessing.connection import _ConnectionBase as Connection # type: ignore
 from typing import Union
 
 from chara.config import GlobalConfig, PluginGroupConfig
@@ -12,12 +12,14 @@ from chara.onebot.events import Event
 
 class PluginGroupProcess(WorkerProcess):
     
-    def __init__(self, config: GlobalConfig, group_config: PluginGroupConfig, pipe_c: Union[Connection, PipeConnection], pipe_p: Union[Connection, PipeConnection]) -> None:
+    def __init__(self, config: GlobalConfig, group_config: PluginGroupConfig, pipes: tuple[Connection, Connection, Connection, Connection]) -> None:
         super().__init__(config, group_config.group_name)
         self.config = config
         self.group_config = group_config
-        self.pipe_c = pipe_c
-        self.pipe_p = pipe_p
+        self.pipe_p_recv = pipes[0]
+        self.pipe_p_send = pipes[1]
+        self.pipe_c_recv = pipes[2]
+        self.pipe_c_send = pipes[3]
 
     def _tick(self, future: asyncio.Future[None]):
         try:
@@ -34,8 +36,8 @@ class PluginGroupProcess(WorkerProcess):
         ticks = 0
         while not self.should_exit:
             ticks += 1
-            if self.pipe_c.poll():
-                event: Union[CoreEvent, Event] = self.pipe_c.recv()
+            if self.pipe_c_recv.poll():
+                event: Union[CoreEvent, Event] = self.pipe_c_recv.recv()
                 if isinstance(event, CoreEvent):
                     if isinstance(event, BotEvent):
                         bot = BOTS[event.self_id]
@@ -62,7 +64,7 @@ class PluginGroupProcess(WorkerProcess):
             if ticks % 100 == 0:
                 ticks = 0
                 event_bytes = pickle.dumps(PluginStatusUpdateEvent(self.name, {plugin.metadata.uuid: plugin.state for plugin in PLUGINS.values()}))
-                self.pipe_c.send_bytes(event_bytes)
+                self.pipe_c_send.send_bytes(event_bytes)
 
     async def startup(self) -> None:
         from chara.core.bot import Bot
@@ -74,13 +76,8 @@ class PluginGroupProcess(WorkerProcess):
         CONTEXT_LOOP.set(LOOP)
         CONTEXT_PLUGIN_GROUP_CONFIG.set(self.group_config)
         load_plugins(self.group_config.directory, self.name)
-        global_data_path = self.config.data.directory
         for config in self.config.bots:
-            bot = Bot(config)
-            bot.data_path = global_data_path / str(config.uin)
-            bot.global_data_path = global_data_path
-            bot.data_path.mkdir(exist_ok=True)
-            BOTS[config.uin] = bot
+            BOTS[config.uin] = Bot(config)
         
         for plugin in PLUGINS.values():
             LOOP.create_task(plugin._handle_task_on_load()) # type: ignore
@@ -93,5 +90,5 @@ class PluginGroupProcess(WorkerProcess):
             LOOP.create_task(plugin._handle_task_on_shutdown()) # type: ignore
 
     def new(self) -> 'PluginGroupProcess':
-        return PluginGroupProcess(self.config, self.group_config, self.pipe_c, self.pipe_p)
+        return PluginGroupProcess(self.config, self.group_config, (self.pipe_p_recv, self.pipe_p_send, self.pipe_c_recv, self.pipe_c_send))
 

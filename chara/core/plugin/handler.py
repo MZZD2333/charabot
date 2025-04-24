@@ -111,3 +111,4 @@ class Handler:
             logger.exception(str(self.trigger) + style.r(' 在Handler处理事件时发生异常.'))
             return
         logger.success(str(self.trigger) + ' Handler处理完毕.')
+

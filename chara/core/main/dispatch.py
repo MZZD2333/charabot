@@ -2,8 +2,8 @@ import asyncio
 import pickle
 
 from itertools import chain
-from multiprocessing.connection import Connection, PipeConnection
-from typing import Any, Type, Union, TYPE_CHECKING
+from multiprocessing.connection import _ConnectionBase as Connection # type: ignore
+from typing import Any, Type, TYPE_CHECKING
 
 from fastapi import APIRouter
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -26,7 +26,7 @@ class Dispatcher:
     __slots__ = ('config', 'pipes', 'router')
     
     config: GlobalConfig
-    pipes: list[Union[Connection, PipeConnection]]
+    pipes: list[tuple[Connection, Connection]]
     router: APIRouter
 
     def __init__(self, main: 'MainProcess', config: GlobalConfig) -> None:
@@ -56,8 +56,8 @@ class Dispatcher:
         await bot.update_bot_info()
         bot.connected = True
         event_bytes = pickle.dumps(BotConnectedEvent(bot.uin))
-        for pipe in self.pipes:
-            pipe.send_bytes(event_bytes)
+        for _, pipe_send in self.pipes:
+            pipe_send.send_bytes(event_bytes)
 
         try:
             while True:
@@ -67,24 +67,24 @@ class Dispatcher:
                     if isinstance(event, MetaEvent):
                         continue
                     event_bytes = pickle.dumps(event)
-                    for pipe in self.pipes:
-                        pipe.send_bytes(event_bytes)
+                    for _, pipe_send in self.pipes:
+                        pipe_send.send_bytes(event_bytes)
         
         except WebSocketDisconnect:
             logger.warning(f'与{bot.name}[{bot.uin}]断开连接.')
 
         event_bytes = pickle.dumps(BotDisConnectedEvent(bot.uin))
-        for pipe in self.pipes:
-            pipe.send_bytes(event_bytes)
+        for _, pipe_send in self.pipes:
+            pipe_send.send_bytes(event_bytes)
         
         bot.connected = False
     
     async def event_loop(self):
         LOOP = CONTEXT_LOOP.get()
         while True:
-            for pipe in self.pipes:
-                if pipe.poll():
-                    event: CoreEvent = pipe.recv()
+            for pipe_recv, _ in self.pipes:
+                if pipe_recv.poll():
+                    event: CoreEvent = pipe_recv.recv()
                     if isinstance(event, PluginStatusUpdateEvent):
                         group = PLUGIN_GROUPS[event.group_name]
                         status = event.status
@@ -104,10 +104,10 @@ class Dispatcher:
             pass
     
     def update_pipes(self, processes: list[WorkerProcess]) -> None:
-        pipes: list[Union[Connection, PipeConnection]] = list()
+        pipes: list[tuple[Connection, Connection]] = list()
         for process in processes:
             if isinstance(process, PluginGroupProcess) and process.is_alive():
-                pipes.append(process.pipe_p)
+                pipes.append((process.pipe_p_recv, process.pipe_p_send))
         self.pipes = pipes
 
 

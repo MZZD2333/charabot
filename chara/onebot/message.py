@@ -241,3 +241,4 @@ class MessageJSONEncoder(JSONEncoder):
 
 def construct_forward_message(messages: Sequence[str|Message|MessageSegment], name: str = 'chara', uin: int = 999999999) -> list[dict[str, Any]]:
     return [MessageSegment.node(name=name, uin=uin, content=msg).dict for msg in messages]
+

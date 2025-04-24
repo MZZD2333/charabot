@@ -12,10 +12,9 @@ def initialize(_config: _PathLike | GlobalConfig | None = None):
     '''
     from multiprocessing import current_process
     
-    from chara.core import Bot, BOTS
     from chara.config import DEFAULT_GLOBAL_CONFIG
     from chara.log import set_logger_config, style, logger
-    from chara.core import MainProcess, CONTEXT_GLOBAL_CONFIG
+    from chara.core import MainProcess
 
     current_process().name = 'chara'
 
@@ -41,8 +40,6 @@ def initialize(_config: _PathLike | GlobalConfig | None = None):
     
     set_logger_config(config.log)
     logger.success(log_msg  + ' loaded successfully!')
-    BOTS.update({bot_config.uin: Bot(bot_config) for bot_config in config.bots})
-    CONTEXT_GLOBAL_CONFIG.set(config)
     main = MainProcess(config)
     
     return main

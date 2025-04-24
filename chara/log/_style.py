@@ -56,4 +56,3 @@ class style(Enum):
     lw = _wrapper('97').__call__
     '''## 亮白色'''
 
-

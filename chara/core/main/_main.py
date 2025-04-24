@@ -12,17 +12,18 @@ from fastapi import FastAPI
 from psutil import Process as ProcessUtil
 
 from chara.config import GlobalConfig
-from chara.log import logger, set_logger_config
+from chara.core.bot import Bot
 from chara.core.main.dispatch import Dispatcher
 from chara.core.main.webui import WebUI
 from chara.core.plugin._load import load_plugins
-from chara.core.param import CONTEXT_LOOP, WINDOWS_PLATFORM
+from chara.core.param import BOTS, CONTEXT_GLOBAL_CONFIG, CONTEXT_LOOP, WINDOWS_PLATFORM
 from chara.core.workers import PluginGroupProcess, WorkerProcess
+from chara.log import logger, set_logger_config
 
 
 _RESTARTING_PROCESS: list[str] = list()
 
-class _ChildProcess:
+class _Worker:
     
     __slots__ = ('process', 'util')
 
@@ -75,7 +76,7 @@ class MainProcess:
     running: bool
     server: uvicorn.Server
     web_ui: WebUI
-    workers: dict[str, _ChildProcess]
+    workers: dict[str, _Worker]
     
     def __init__(self, config: GlobalConfig) -> None:
         if config.module.fastapi.enable_docs:
@@ -123,31 +124,33 @@ class MainProcess:
     async def _on_startup(self) -> None:
         LOOP = CONTEXT_LOOP.get()
         self.running = True
-        for process in self.workers.values():
-            if not process.is_alive:
-                LOOP.create_task(process.start())
+        for worker in self.workers.values():
+            if not worker.is_alive:
+                await worker.start()
 
         self.dispatcher.update_pipes([cp.process for cp in self.workers.values()])
         LOOP.create_task(self.dispatcher.event_loop())
 
     async def _on_shutdown(self) -> None:
         LOOP = CONTEXT_LOOP.get()
-        print(LOOP)
         self.running = False
-        for process in self.workers.values():
-            if process.is_alive:
-                LOOP.create_task(process.start())
+        for worker in self.workers.values():
+            if worker.is_alive:
+                LOOP.create_task(worker.close())
 
     def add_worker(self, process: WorkerProcess) -> None:
         name = process.name
         if name in self.workers:
             logger.warning(f'{name} 名称已存在.')
             return
-        self.workers[name] = _ChildProcess(process)
+        self.workers[name] = _Worker(process)
         self.dispatcher.update_pipes([cp.process for cp in self.workers.values()])
 
     def run(self) -> None:
         logger.success(f'主进程启动 [PID: {self.process.pid}].')
+        CONTEXT_GLOBAL_CONFIG.set(self.config)
+        BOTS.update({bot_config.uin: Bot(bot_config) for bot_config in self.config.bots})
+
         def handle_exit(sig: int, _: Any):
             if _RESTARTING_PROCESS:
                 return
@@ -162,8 +165,9 @@ class MainProcess:
             load_plugins(group.directory, group.group_name, False)
         
         for group in self.config.plugins:
-            pipe_c, pipe_p = Pipe()
-            self.add_worker(PluginGroupProcess(self.config, group, pipe_c, pipe_p))
+            pipe_c_recv, pipe_p_send = Pipe()
+            pipe_p_recv, pipe_c_send = Pipe()
+            self.add_worker(PluginGroupProcess(self.config, group, (pipe_p_recv, pipe_p_send, pipe_c_recv, pipe_c_send)))
 
         asyncio.run(self._main())
         logger.success(f'主进程关闭 [PID: {self.process.pid}].')

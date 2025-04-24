@@ -14,4 +14,3 @@ class APICallFailed(Exception):
     def __str__(self) -> str:
         return f'APICallFailed: An error caught while calling the api({self.api}). {self.content}'
 
-
