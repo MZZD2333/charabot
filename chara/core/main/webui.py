@@ -12,7 +12,7 @@ from starlette.staticfiles import NotModifiedResponse
 from starlette.types import Receive, Scope, Send
 
 from chara.config import GlobalConfig, WebUIConfig
-from chara.core.param import CONTEXT_LOOP, PLUGINS, PLUGIN_GROUPS
+from chara.core.param import BOTS, CONTEXT_LOOP, PLUGINS, PLUGIN_GROUPS
 from chara.log import logger
 
 if TYPE_CHECKING:
@@ -126,15 +126,15 @@ class WebUI:
         async def _():
             data: list[dict[str, Any]] = [
                 {
-                'uuid': plugin.metadata.uuid,
-                'name': plugin.metadata.name,
-                'group': plugin.group,
-                'state': plugin.state.value,
-                'authors': plugin.metadata.authors,
-                'version': plugin.metadata.version,
-                'description': plugin.metadata.description,
-                'icon': plugin.metadata.icon,
-                'readme': plugin.metadata.readme,
+                    'uuid': plugin.metadata.uuid,
+                    'name': plugin.metadata.name,
+                    'group': plugin.group,
+                    'state': plugin.state.value,
+                    'authors': plugin.metadata.authors,
+                    'version': plugin.metadata.version,
+                    'description': plugin.metadata.description,
+                    'icon': plugin.metadata.icon,
+                    'readme': plugin.metadata.readme,
                 }
                 for plugin in PLUGINS.values()
             ]
@@ -149,4 +149,24 @@ class WebUI:
                     return Response(status_code=200)
                 return Response(f'插件组{name}正在重启, 请勿重复调用.', status_code=400)
             return Response(f'插件组{name}不存在.', status_code=400)
+
+        @self.api.post('/bot/list')
+        async def _():
+            data: list[dict[str, Any]] = [
+                {
+                    'uin': uin,
+                    'name': bot.name,
+                    'connected': bot.connected,
+                    'data': {
+                        'friends': bot.friends,
+                        'groups': bot.groups,
+                        'friend_list': bot.friend_list,
+                        'group_list': bot.group_list,
+                        'owner_groups': bot.owner_groups,
+                        'admin_groups': bot.admin_groups,
+                    }
+                }
+                for uin, bot in BOTS.items()
+            ]
+            return JSONResponse(data)
 

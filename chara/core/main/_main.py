@@ -1,5 +1,6 @@
 import asyncio
 import signal
+import time
 
 from contextlib import asynccontextmanager
 from multiprocessing import current_process
@@ -9,6 +10,7 @@ from typing import Any
 import uvicorn
 
 from fastapi import FastAPI
+from fastapi.websockets import WebSocket, WebSocketDisconnect
 from psutil import Process as ProcessUtil
 
 from chara.config import GlobalConfig
@@ -42,8 +44,7 @@ class _Worker:
         pid = self.util.pid
         cpu = self.util.cpu_percent()
         mem = round(self.util.memory_info().vms / 1024 /1024, 2)
-        name = self.process.name
-        return {'pid': pid, 'cpu': cpu, 'mem': mem, 'name': name}
+        return {'pid': pid, 'cpu': cpu, 'mem': mem}
 
     async def start(self) -> None:
         self.process.start()
@@ -57,13 +58,14 @@ class _Worker:
         self.process.join()
 
     async def restart(self) -> None:
-        _RESTARTING_PROCESS.append(self.process.name)
+        token = f'{self.process.name}-{time.time()}'
+        _RESTARTING_PROCESS.append(token)
         await self.close()
         process = self.process.new()
         del self.process
         self.process = process
         await self.start()
-        _RESTARTING_PROCESS.remove(self.process.name)
+        _RESTARTING_PROCESS.remove(token)
 
 
 class MainProcess:
@@ -79,6 +81,12 @@ class MainProcess:
     workers: dict[str, _Worker]
     
     def __init__(self, config: GlobalConfig) -> None:
+        self.workers = dict()
+        self.config = config
+        self.running = False
+        self.process = current_process()
+        self.process_util = ProcessUtil(self.process.pid)
+
         if config.module.fastapi.enable_docs:
             self.app = FastAPI()
         else:
@@ -115,12 +123,22 @@ class MainProcess:
             await self._on_shutdown()
         
         self.app.router.lifespan_context = lifespan
-        self.workers = dict()
-        self.config = config
-        self.running = False
-        self.process = current_process()
-        self.process_util = ProcessUtil(self.process.pid)
-
+        self.app.websocket_route('/monitor')(self._monitor)
+   
+    async def _monitor(self, websocket: WebSocket):
+        await websocket.accept()
+        try:
+            while True:
+                data: dict[str, Any] = {
+                    'main': {'name': self.process.name, 'pid': self.process.pid, 'cpu': self.process_util.cpu_percent(), 'mem': round(self.process_util.memory_info().vms / 1024 /1024, 2)},
+                    'workers': [{'name': worker.process.name, 'alive': worker.is_alive, 'status': worker.status if worker.is_alive else None} for worker in self.workers.values()]
+                }
+                await websocket.send_json(data)
+                await asyncio.sleep(3)
+        
+        except WebSocketDisconnect:
+            pass
+    
     async def _on_startup(self) -> None:
         LOOP = CONTEXT_LOOP.get()
         self.running = True

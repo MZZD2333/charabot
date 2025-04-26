@@ -53,7 +53,7 @@ class Dispatcher:
             return
         del data
         
-        await bot.update_bot_info()
+        await bot.update_bot_data()
         bot.connected = True
         event_bytes = pickle.dumps(BotConnectedEvent(bot.uin))
         for _, pipe_send in self.pipes:
@@ -81,7 +81,9 @@ class Dispatcher:
     
     async def event_loop(self):
         LOOP = CONTEXT_LOOP.get()
+        ticks = 0
         while True:
+            ticks += 1
             for pipe_recv, _ in self.pipes:
                 if pipe_recv.poll():
                     event: CoreEvent = pipe_recv.recv()
@@ -91,17 +93,14 @@ class Dispatcher:
                         for uuid in status:
                             group[uuid].state = status[uuid]
                             PLUGINS[uuid].state = status[uuid]
-                
-            else:
-                tick = LOOP.create_future()
-                LOOP.call_later(1, self._tick, tick)
-                await tick
-    
-    def _tick(self, future: asyncio.Future[None]):
-        try:
-            future.set_result(None)
-        except:
-            pass
+            
+            await asyncio.sleep(1)
+            
+            if ticks % 100 == 0:
+                ticks = 0
+                for bot in BOTS.values():
+                    if bot.connected and not bot.is_latest_data_file():
+                        LOOP.create_task(bot.update_bot_data())
     
     def update_pipes(self, processes: list[WorkerProcess]) -> None:
         pipes: list[tuple[Connection, Connection]] = list()

@@ -39,6 +39,8 @@ class Bot(API):
         self.superusers = config.superusers
         self.groups = list()
         self.friends = list()
+        self.group_list = list()
+        self.friend_list = list()
         self.owner_groups = list()
         self.admin_groups = list()
         self.config = config
@@ -51,15 +53,18 @@ class Bot(API):
         self.data_path = global_data_path / str(config.uin)
         self.global_data_path = global_data_path
         self.data_path.mkdir(parents=True, exist_ok=True)
+        
+        self._last_update_time = 0
     
-    async def update_bot_info(self, use_cache: bool = True, cache_retention_time: float = 86400):
+    async def update_bot_data(self, use_cache: bool = True, cache_retention_time: float = 86400):
+        '''## 更新bot数据'''
         if use_cache:
             path = next(self.data_path.rglob('info_*.json'), None)
             if path is not None:
                 st = int(path.stem.lstrip('info_'))
                 ct = int(time.time())
                 if (ct - st) < cache_retention_time:
-                    self.load_bot_info()
+                    self._load_bot_data()
                     return
         try:
             self.group_list = await self.get_group_list()
@@ -73,12 +78,19 @@ class Bot(API):
                     self.owner_groups.append(group_id)
                 elif role == 'admin':
                     self.admin_groups.append(group_id)
-            self.save_bot_info()
+            self._save_bot_data()
         except APICallFailed:
             logger.exception(f'更新{style.g(self.name)}' + style.c(f'[{self.uin}]') + '数据时发生错误')
     
-    def save_bot_info(self):
-        '''## 保存bot信息'''
+    def is_latest_data_file(self):
+        '''## bot数据文件是否为最新'''
+        path = next(self.data_path.rglob('info_*.json'), None)
+        if path is None:
+            return False
+        st = int(path.stem.lstrip('info_'))
+        return self._last_update_time == st
+    
+    def _save_bot_data(self):
         data = dict(
             groups=self.groups,
             friends=self.friends,
@@ -87,11 +99,13 @@ class Bot(API):
             owner_groups=self.owner_groups,
             admin_groups=self.admin_groups,
         )
-        with open(self.data_path / f'info_{int(time.time())}.json', 'w', encoding='UTF-8') as f:
+        for path in self.data_path.rglob('info_*.json'):
+            path.unlink()
+        ct = int(time.time())
+        with open(self.data_path / f'info_{ct}.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
     
-    def load_bot_info(self):
-        '''## 加载bot信息'''
+    def _load_bot_data(self):
         path = next(self.data_path.rglob('info_*.json'), None)
         if path is None:
             return None

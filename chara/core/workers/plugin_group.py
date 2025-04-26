@@ -21,12 +21,6 @@ class PluginGroupProcess(WorkerProcess):
         self.pipe_c_recv = pipes[2]
         self.pipe_c_send = pipes[3]
 
-    def _tick(self, future: asyncio.Future[None]):
-        try:
-            future.set_result(None)
-        except:
-            pass
-
     async def main(self) -> None:
         from chara.core.param import BOTS, CONTEXT_LOOP, PLUGINS
 
@@ -43,7 +37,7 @@ class PluginGroupProcess(WorkerProcess):
                         bot = BOTS[event.self_id]
                         if isinstance(event, BotConnectedEvent):
                             bot.connected = True
-                            await bot.update_bot_info()
+                            await bot.update_bot_data()
                             for plugin in PLUGINS.values():
                                 LOOP.create_task(plugin._handle_task_on_bot_connect(bot)) # type: ignore
                         elif isinstance(event, BotDisConnectedEvent):
@@ -57,14 +51,15 @@ class PluginGroupProcess(WorkerProcess):
                     LOOP.create_task(plugin._handle_event(bot, event)) # type: ignore
             
             else:
-                future = LOOP.create_future()
-                LOOP.call_later(0.1, self._tick, future)
-                await future
+                await asyncio.sleep(0.1)
             
             if ticks % 100 == 0:
                 ticks = 0
                 event_bytes = pickle.dumps(PluginStatusUpdateEvent(self.name, {plugin.metadata.uuid: plugin.state for plugin in PLUGINS.values()}))
                 self.pipe_c_send.send_bytes(event_bytes)
+                for bot in BOTS.values():
+                    if bot.connected and not bot.is_latest_data_file():
+                        LOOP.create_task(bot.update_bot_data())
 
     async def startup(self) -> None:
         from chara.core.bot import Bot
@@ -75,9 +70,8 @@ class PluginGroupProcess(WorkerProcess):
         CONTEXT_GLOBAL_CONFIG.set(self.global_config)
         CONTEXT_LOOP.set(LOOP)
         CONTEXT_PLUGIN_GROUP_CONFIG.set(self.group_config)
+        BOTS.update({bot_config.uin: Bot(bot_config) for bot_config in self.config.bots})
         load_plugins(self.group_config.directory, self.name)
-        for config in self.config.bots:
-            BOTS[config.uin] = Bot(config)
         
         for plugin in PLUGINS.values():
             LOOP.create_task(plugin._handle_task_on_load()) # type: ignore
