@@ -54,18 +54,16 @@ class Bot(API):
         self.global_data_path = global_data_path
         self.data_path.mkdir(parents=True, exist_ok=True)
         
-        self._last_update_time = 0
+        path = next(self.data_path.rglob('info_*.json'), None)
+        self._last_update_time = 0 if path is None else int(path.stem.lstrip('info_'))
     
-    async def update_bot_data(self, use_cache: bool = True, cache_retention_time: float = 86400):
+    async def update_bot_data(self, use_cache: bool = True, retention: float = 86400):
         '''## 更新bot数据'''
         if use_cache:
-            path = next(self.data_path.rglob('info_*.json'), None)
-            if path is not None:
-                st = int(path.stem.lstrip('info_'))
-                ct = int(time.time())
-                if (ct - st) < cache_retention_time:
-                    self._load_bot_data()
-                    return
+            ct = int(time.time())
+            if (ct - self._last_update_time) < retention:
+                self._load_bot_data()
+                return
         try:
             self.group_list = await self.get_group_list()
             self.friend_list = await self.get_friend_list()
@@ -101,8 +99,8 @@ class Bot(API):
         )
         for path in self.data_path.rglob('info_*.json'):
             path.unlink()
-        ct = int(time.time())
-        with open(self.data_path / f'info_{ct}.json', 'w', encoding='UTF-8') as f:
+        self._last_update_time = int(time.time())
+        with open(self.data_path / f'info_{self._last_update_time}.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
     
     def _load_bot_data(self):
