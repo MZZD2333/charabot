@@ -79,14 +79,9 @@ class UvicornConfig(_BaseConfig):
     loop: str
 
 
-class PlayWrightConfig(_BaseConfig):
-    enable: bool
-
-
 class ModuleConfig(_BaseConfig):
     fastapi: FastAPIConfig
     uvicorn: UvicornConfig
-    playwright: PlayWrightConfig
 
 
 class LogConfig(_BaseConfig):
@@ -167,8 +162,6 @@ module:
   uvicorn:
     log_level: error
     loop: auto
-  playwright:
-    enable: true
 
 # 日志配置
 log:

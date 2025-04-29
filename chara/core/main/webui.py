@@ -34,7 +34,9 @@ class StaticFiles:
         
     def lookup_plugin_files(self, uuid: str, path: Path) -> Optional[Path]:
         if plugin := PLUGINS.get(uuid, None):
-            if (request_file := plugin.path / path).exists():
+            if (request_file := plugin.root_path / path).exists():
+                return request_file
+            elif (request_file := plugin.data_path / path).exists():
                 return request_file
             
     def lookup_static_files(self, path: Path) -> Optional[Path]:

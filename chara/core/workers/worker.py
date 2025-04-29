@@ -18,6 +18,11 @@ class WorkerProcess(Process):
         self.should_exit = False
 
     async def _main(self) -> None:
+        from chara.core.param import CONTEXT_LOOP
+
+        LOOP = asyncio.get_event_loop()
+        CONTEXT_LOOP.set(LOOP)
+
         captured_signals: list[int] = list()
         def handle_exit(sig: int, _: Any):
             captured_signals.append(sig)

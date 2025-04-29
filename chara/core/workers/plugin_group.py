@@ -66,9 +66,8 @@ class PluginGroupProcess(WorkerProcess):
         from chara.core.param import BOTS, PLUGINS, CONTEXT_GLOBAL_CONFIG, CONTEXT_LOOP, CONTEXT_PLUGIN_GROUP_CONFIG
         from chara.core.plugin._load import load_plugins
         
-        LOOP = asyncio.get_event_loop()
+        LOOP = CONTEXT_LOOP.get()
         CONTEXT_GLOBAL_CONFIG.set(self.global_config)
-        CONTEXT_LOOP.set(LOOP)
         CONTEXT_PLUGIN_GROUP_CONFIG.set(self.group_config)
         BOTS.update({bot_config.uin: Bot(bot_config) for bot_config in self.config.bots})
         load_plugins(self.group_config.directory, self.name)

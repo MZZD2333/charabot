@@ -26,8 +26,9 @@ def current_plugin() -> Plugin:
 
 
 def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool = True) -> None:
-    from chara.core import PLUGINS, PLUGIN_GROUPS
+    from chara.core.param import CONTEXT_GLOBAL_CONFIG, PLUGINS, PLUGIN_GROUPS
     
+    global_config = CONTEXT_GLOBAL_CONFIG.get()
     directory = Path(directory)
 
     for path in detect_plugin_path(directory):
@@ -35,7 +36,8 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
             metadata = load_plugin_metadata(path)
             log_content = style.g('Plugin') + style.c(f'[{metadata.name}]') + style.m(f'[{metadata.version}]') + style.y(f'[{metadata.uuid}]')
             plugin = Plugin(group_name, metadata)
-            plugin.path = path
+            plugin.root_path = path
+            plugin.data_path = global_config.data.directory / 'plugins' / path.stem
             if metadata.uuid in PLUGINS:
                 if in_worker_process:
                     continue
@@ -49,6 +51,7 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
             continue
         
         if not in_worker_process:
+            plugin.data_path.mkdir(parents=True, exist_ok=True)
             if group_name not in PLUGIN_GROUPS:
                 PLUGIN_GROUPS[group_name] = dict()
             PLUGIN_GROUPS[group_name][metadata.uuid] = plugin

@@ -32,11 +32,12 @@ class PluginState(IntEnum):
 
 class Plugin:
     
-    __slots__ = ('group', 'metadata', 'path', 'state', 'triggers', '_task_on_load', '_task_on_shutdown', '_task_on_bot_connect', '_task_on_bot_disconnect')
+    __slots__ = ('group', 'metadata', 'data_path', 'root_path', 'state', 'triggers', '_task_on_load', '_task_on_shutdown', '_task_on_bot_connect', '_task_on_bot_disconnect')
     
     group: str
     metadata: MetaData
-    path: Path
+    data_path: Path
+    root_path: Path
     state: PluginState
     triggers: list[Trigger]
     

@@ -19,7 +19,7 @@ from chara.core.main.dispatch import Dispatcher
 from chara.core.main.webui import WebUI
 from chara.core.plugin._load import load_plugins
 from chara.core.param import BOTS, CONTEXT_GLOBAL_CONFIG, CONTEXT_LOOP, WINDOWS_PLATFORM
-from chara.core.workers import PluginGroupProcess, WorkerProcess
+from chara.core.workers import GenerateResourceProcess, PluginGroupProcess, WorkerProcess
 from chara.log import logger, set_logger_config
 
 
@@ -148,6 +148,12 @@ class MainProcess:
 
         self.dispatcher.update_pipes([cp.process for cp in self.workers.values()])
         LOOP.create_task(self.dispatcher.event_loop())
+
+        async def _grp_check():
+            grp = GenerateResourceProcess(self.config, 'GenerateResource')
+            if not await grp.check():
+                grp.start()
+        LOOP.create_task(_grp_check())
 
     async def _on_shutdown(self) -> None:
         LOOP = CONTEXT_LOOP.get()
