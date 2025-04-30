@@ -1,41 +1,6 @@
 // charabot web-ui
 'use strict';
 
-const API = {
-    request(method, url, body) {
-        return new Promise(
-            function (resolve, reject) {
-                var xhr = new XMLHttpRequest();
-                xhr.open(method, url);
-                xhr.onload = () => {
-                    if (xhr.status === 200) {
-                        resolve(xhr.response);
-                    } else {
-                        reject(xhr.response);
-                    }
-                };
-                xhr.onerror = () => reject(new Error('Network error'));
-                xhr.send(body);
-            }
-        );
-    },
-    monitor(){
-        console.log(window.location.host);
-        var ws = new WebSocket(`ws://${window.location.host}/monitor`);
-        return ws;
-
-    },
-    pluginList() {
-        return this.request('post', '/api/plugin/list');
-    },
-    pluginGroupReload(name) {
-        return this.request('post', `/api/plugin/group/${name}/reload`);
-    },
-    botList() {
-        return this.request('post', `/api/bot/list`);
-    },
-};
-
 const UI = {
     root: document.getElementById('root'),
     sidemenu: {

@@ -19,8 +19,8 @@ class MetaData(BaseModel):
     description: str
     authors: list[str]
     version: str
+    docs: Optional[str] = None
     icon: Optional[str] = None
-    readme: Optional[str] = None
 
 
 class PluginState(IntEnum):

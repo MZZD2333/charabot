@@ -50,9 +50,9 @@ class Bot(API):
         
         group_config = CONTEXT_GLOBAL_CONFIG.get()
         global_data_path = group_config.data.directory
-        self.data_path = global_data_path / str(config.uin)
-        self.global_data_path = global_data_path
+        self.data_path = global_data_path / 'bots' / str(config.uin)
         self.data_path.mkdir(parents=True, exist_ok=True)
+        self.global_data_path = global_data_path
         
         path = next(self.data_path.rglob('info_*.json'), None)
         self._last_update_time = 0 if path is None else int(path.stem.lstrip('info_'))

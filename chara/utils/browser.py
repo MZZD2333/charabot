@@ -10,15 +10,30 @@ _BW: ContextVar[Optional[Browser]] = ContextVar('BW', default=None)
 
 async def launch():
     global _PW, _BW
-    _playwright = await async_playwright().start()
-    _browser = await _playwright.chromium.launch()
-    _PW.set(_playwright)
-    _BW.set(_browser)
+    
+    _playwright = _PW.get()
+    if _playwright is None:
+        _playwright = await async_playwright().start()
+        _PW.set(_playwright)
+    
+    _browser = _BW.get()
+    if _browser is None:
+        _browser = await _playwright.chromium.launch()
+        _BW.set(_browser)
+        
+    return _browser
 
 
-def get_browser():
-    bw = _BW.get()
-    assert bw, 'chromium未启动'
-    return bw
+async def close():
+    global _PW, _BW
 
-
+    _browser = _BW.get()
+    if _browser is None:
+        return
+    
+    await _browser.close()
+    
+    _playwright = _PW.get()
+    if _playwright is None:
+        return
+    await _playwright.stop()
