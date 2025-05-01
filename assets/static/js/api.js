@@ -9,7 +9,7 @@ const API = {
                 xhr.open(method, url);
                 xhr.onload = () => {
                     if (xhr.status === 200) {
-                        resolve(xhr.response);
+                        resolve(JSON.parse(xhr.response));
                     } else {
                         reject(xhr.response);
                     }
@@ -22,7 +22,6 @@ const API = {
     monitor(){
         var ws = new WebSocket(`ws://${window.location.host}/monitor`);
         return ws;
-
     },
     pluginList() {
         return this.request('post', '/api/plugin/list');

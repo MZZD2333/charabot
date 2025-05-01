@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from chara.core.bot import Bot
 from chara.core.plugin.trigger import Trigger
 from chara.lib.executor import Executor
+from chara.log import style, logger
 from chara.onebot.events import Event
 from chara.typing import ExecutorCallable
 
@@ -57,10 +58,10 @@ class Plugin:
         self._task_on_bot_disconnect = list()
     
     def __str__(self) -> str:
-        return f'Plugin[{self.metadata.name}][{self.metadata.version}][{self.metadata.uuid}]'
+        return style.g('Plugin') + style.c(f'[{self.metadata.name}]') + style.m(f'[{self.metadata.version}]') + style.y(f'[{self.metadata.uuid}]')
 
     def __repr__(self) -> str:
-        return f'Plugin[{self.metadata.name}][{self.metadata.version}][{self.metadata.uuid}]'
+        return style.g('Plugin') + style.c(f'[{self.metadata.name}]') + style.m(f'[{self.metadata.version}]') + style.y(f'[{self.metadata.uuid}]')
 
     async def _handle_event(self, bot: Bot, event: Event) -> None:
         triggers = self.triggers.copy()
@@ -74,19 +75,31 @@ class Plugin:
     
     async def _handle_task_on_load(self):
         for task in self._task_on_load:
-            await task[1]()
+            try:
+                await task[1]()
+            except:
+                logger.exception(str(self) + f'在执行加载后任务时出错.')
 
     async def _handle_task_on_shutdown(self):
         for task in self._task_on_shutdown:
-            await task[1]()
+            try:
+                await task[1]()
+            except:
+                logger.exception(str(self) + f'在执行进程结束前任务时出错.')
 
     async def _handle_task_on_bot_connect(self, bot: Bot):
         for task in self._task_on_bot_connect:
-            await task[1](bot)
+            try:
+                await task[1](bot)
+            except:
+                logger.exception(str(self) + f'在执行连接至bot后任务时出错.')
 
     async def _handle_task_on_bot_disconnect(self, bot: Bot):
         for task in self._task_on_bot_disconnect:
-            await task[1](bot)
+            try:
+                await task[1](bot)
+            except:
+                logger.exception(str(self) + f'在执行与bot断开任务时出错.')
 
     def add_trigger(self, trigger: list[Trigger] | Trigger) -> None:
         '''

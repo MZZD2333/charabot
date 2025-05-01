@@ -34,16 +34,15 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
     for path in detect_plugin_path(directory):
         try:
             metadata = load_plugin_metadata(path)
-            log_content = style.g('Plugin') + style.c(f'[{metadata.name}]') + style.m(f'[{metadata.version}]') + style.y(f'[{metadata.uuid}]')
             plugin = Plugin(group_name, metadata)
+            log_content = str(plugin)
             plugin.root_path = path
             plugin.data_path = global_config.data.directory / 'plugins' / path.stem
             if metadata.uuid in PLUGINS:
                 if in_worker_process:
                     continue
                 ep = PLUGINS[metadata.uuid]
-                _log_content = style.g('Plugin') + style.c(f'[{ep.metadata.name}]') + style.m(f'[{ep.metadata.version}]') + style.y(f'[{ep.metadata.uuid}]')
-                logger.warning(log_content + ' 与 ' + _log_content + ' 具有相同的uuid. 跳过导入.')
+                logger.warning(log_content + '与' + str(ep) + '具有相同的uuid. 跳过导入.')
                 continue
             PLUGINS[metadata.uuid] = plugin
         except:
@@ -55,7 +54,7 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
             if group_name not in PLUGIN_GROUPS:
                 PLUGIN_GROUPS[group_name] = dict()
             PLUGIN_GROUPS[group_name][metadata.uuid] = plugin
-            logger.info(log_content + ' 已添加至' + style.c(f'GROUP[{group_name}]') + '.')
+            logger.info(log_content + '已添加至' + style.c(f'GROUP[{group_name}]') + '.')
             continue
 
         _ON_LOADING.set(True)
@@ -71,11 +70,11 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
                         trigger.name = instance_name
                 plugin.add_trigger([t[1] for t in trigger_instances])
             plugin.state = PluginState.WORKING
-            logger.success(log_content + style.g(' 加载成功!'))
+            logger.success(log_content + style.g('加载成功!'))
         
         except:
             plugin.state = PluginState.NOT_WORKING
-            logger.exception(log_content + style.r(' 加载失败!'))
+            logger.exception(log_content + style.r('加载失败!'))
 
         _ON_LOADING.set(False)
 
