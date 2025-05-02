@@ -107,11 +107,13 @@ async def close() -> None:
         if _browser is None:
             return
         await _browser.close()
+        _CBW.set(None)
         
         _playwright = _CPW.get()
         if _playwright is None:
             return
         await _playwright.stop()
+        _CPW.set(None)
     except:
         pass
 
