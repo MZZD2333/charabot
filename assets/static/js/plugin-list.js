@@ -3,48 +3,66 @@
 
 import { API } from './api.js';
 
-
-API.pluginList().then((result) => {
+API.pluginGroupList().then((result) => {
     const root = document.getElementById('root');
-    function createGroup(name, data) {
-        var group = document.createElement('div');
+    function createGroup(name, plugins) {
+        let group = document.createElement('div');
+        let title = document.createElement('div');
+        let container = document.createElement('div');
         group.className = 'group';
-        for (var i in data) {
-            group.appendChild(createRow(data[i]));
+        title.className = 'group-title';
+        container.className = 'group-container';
+        for (let i in plugins) {
+            container.appendChild(createPlugin(plugins[i]));
         }
+        title.setAttribute('name', name);
+        group.appendChild(title);
+        group.appendChild(container);
         return group;
     }
-    function createRow(data) {
-        var row = document.createElement('div');
-        var icon = document.createElement('div');
-        var info = document.createElement('div');
-        var stat = document.createElement('div');
-        row.className = 'row';
+    function createPlugin(data) {
+        let plugin = document.createElement('div');
+        let icon = document.createElement('img');
+        let info = document.createElement('div');
+        let name = document.createElement('div');
+        let desc = document.createElement('div');
+        let version = document.createElement('div');
+        let authors = document.createElement('div');
+        plugin.className = 'plugin';
         icon.className = 'icon';
         info.className = 'info';
-        stat.className = 'stat';
-        row.appendChild(icon);
-        row.appendChild(info);
-        row.appendChild(stat);
-        return row;
+        name.className = 'name';
+        desc.className = 'desc';
+        version.className = 'version';
+        authors.className = 'authors';
+        icon.alt = '';
+        icon.src = `/static/plugin/${data.uuid}/${data.icon}`;
+        name.innerHTML = `${data.index}. ${data.name}`;
+        desc.innerHTML = data.description;
+        version.innerHTML = `version: ${data.version}`;
+        authors.innerHTML = `authors: ${data.authors}`;
+        plugin.setAttribute('stat', data.state);
+        info.appendChild(name);
+        info.appendChild(version);
+        info.appendChild(desc);
+        info.appendChild(authors);
+        plugin.appendChild(icon);
+        plugin.appendChild(info);
+        return plugin;
     }
-    var head = document.createElement('div');
-    var list = document.createElement('div');
+    let head = document.createElement('div');
+    let logo = document.createElement('img');
+    let title = document.createElement('div');
+    let list = document.createElement('div');
     head.className = 'head';
+    logo.className = 'logo';
+    title.className = 'title';
     list.className = 'list';
-    var groups = new Map();
-    for (var i in result) {
-        var name = result[i].group;
-        if (name in groups) {
-            groups[name].push(result[i])
-        }
-        else {
-            groups[name] = new Array();
-            groups[name].push(result[i])
-        }
-    }
-    for (var name in groups) {
-        list.appendChild(createGroup(name, groups[name]));
+    title.innerText = '插件列表';
+    head.appendChild(logo);
+    head.appendChild(title);
+    for (let i in result) {
+        list.appendChild(createGroup(result[i].name, result[i].plugins));
     }
     root.appendChild(head);
     root.appendChild(list);

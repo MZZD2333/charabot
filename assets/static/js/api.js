@@ -5,7 +5,7 @@ const API = {
     request(method, url, body) {
         return new Promise(
             function (resolve, reject) {
-                var xhr = new XMLHttpRequest();
+                const xhr = new XMLHttpRequest();
                 xhr.open(method, url);
                 xhr.onload = () => {
                     if (xhr.status === 200) {
@@ -28,6 +28,9 @@ const API = {
     },
     pluginData(uuid) {
         return this.request('post', `/api/plugin/${uuid}/data`);
+    },
+    pluginGroupList() {
+        return this.request('post', '/api/plugin/group/list');
     },
     pluginGroupReload(name) {
         return this.request('post', `/api/plugin/group/${name}/reload`);

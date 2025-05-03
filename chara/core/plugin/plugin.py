@@ -33,8 +33,9 @@ class PluginState(IntEnum):
 
 class Plugin:
     
-    __slots__ = ('group', 'metadata', 'data_path', 'root_path', 'state', 'triggers', '_task_on_load', '_task_on_shutdown', '_task_on_bot_connect', '_task_on_bot_disconnect')
+    __slots__ = ('index', 'group', 'metadata', 'data_path', 'root_path', 'state', 'triggers', '_task_on_load', '_task_on_shutdown', '_task_on_bot_connect', '_task_on_bot_disconnect')
     
+    index: int
     group: str
     metadata: MetaData
     data_path: Path
@@ -48,6 +49,7 @@ class Plugin:
     _task_on_bot_disconnect: list[tuple[int, ExecutorCallable[Any]]]
     
     def __init__(self, group: str, metadata: MetaData) -> None:
+        self.index = 0
         self.group = group
         self.metadata = metadata
         self.state = PluginState.NOT_IMPORTED

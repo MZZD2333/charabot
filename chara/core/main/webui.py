@@ -128,6 +128,7 @@ class WebUI:
         async def _():
             data: list[dict[str, Any]] = [
                 {
+                    'index': plugin.index,
                     'uuid': plugin.metadata.uuid,
                     'name': plugin.metadata.name,
                     'group': plugin.group,
@@ -146,6 +147,7 @@ class WebUI:
         async def _(uuid: str):
             if plugin := PLUGINS.get(uuid, None):
                 data: dict[str, Any] = {
+                    'index': plugin.index,
                     'uuid': plugin.metadata.uuid,
                     'name': plugin.metadata.name,
                     'group': plugin.group,
@@ -158,6 +160,31 @@ class WebUI:
                 }                
                 return JSONResponse(data)
             return Response(f'插件{uuid}不存在.', status_code=400)
+
+        @self.api.post('/plugin/group/list')
+        async def _():
+            data: list[dict[str, Any]] = [
+                {
+                    'name': name,
+                    'plugins': [
+                        {
+                            'index': plugin.index,
+                            'uuid': plugin.metadata.uuid,
+                            'name': plugin.metadata.name,
+                            'group': plugin.group,
+                            'state': plugin.state.value,
+                            'authors': plugin.metadata.authors,
+                            'version': plugin.metadata.version,
+                            'description': plugin.metadata.description,
+                            'icon': plugin.metadata.icon,
+                            'docs': plugin.metadata.docs,
+                        }
+                        for plugin in group.values()
+                    ]
+                }
+                for name, group in PLUGIN_GROUPS.items()
+            ]
+            return JSONResponse(data)
 
         @self.api.post('/plugin/group/{name}/reload')
         async def _(name: str):

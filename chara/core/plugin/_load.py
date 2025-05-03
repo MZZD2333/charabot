@@ -39,11 +39,11 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
             plugin.root_path = path
             plugin.data_path = global_config.data.directory / 'plugins' / path.stem
             if metadata.uuid in PLUGINS:
-                if in_worker_process:
-                    continue
-                ep = PLUGINS[metadata.uuid]
-                logger.warning(log_content + '与' + str(ep) + '具有相同的uuid. 跳过导入.')
+                if not in_worker_process:
+                    ep = PLUGINS[metadata.uuid]
+                    logger.warning(log_content + '与' + str(ep) + '具有相同的uuid. 跳过导入.')
                 continue
+            plugin.index = len(PLUGINS)
             PLUGINS[metadata.uuid] = plugin
         except:
             logger.exception(f'错误的插件格式, 跳过导入[{path}].')

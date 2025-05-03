@@ -13,9 +13,9 @@ const UI = {
             this.node.className = 'side-menu';
             this.list.className = 'side-menu-list';
             this.mask.className = 'side-menu-mask';
-            var head = document.createElement('div');
-            var logo = document.createElement('div');
-            var toggle = document.createElement('button');
+            let head = document.createElement('div');
+            let logo = document.createElement('div');
+            let toggle = document.createElement('button');
             head.className = 'side-menu-head';
             logo.className = 'side-menu-head-logo';
             toggle.className = 'side-menu-head-toggle';
@@ -53,9 +53,9 @@ const UI = {
             UI.root.appendChild(this.node);
         },
         addButton(icon, text) {
-            var button = document.createElement('button');
-            var btnicon = document.createElement('div');
-            var btntext = document.createElement('div');
+            let button = document.createElement('button');
+            let btnicon = document.createElement('div');
+            let btntext = document.createElement('div');
             button.className = 'side-menu-button';
             btnicon.className = 'side-menu-button-icon';
             btntext.className = 'side-menu-button-text';
@@ -79,14 +79,14 @@ const UI = {
             UI.root.appendChild(this.node);
         },
         addPage(name) {
-            var page = document.createElement('div');
+            let page = document.createElement('div');
             page.className = 'tab-frame-page';
             this.pages[name] = page;
             this.node.appendChild(page)
             return page;
         },
         showPage(name) {
-            for (var n in this.pages) {
+            for (let n in this.pages) {
                 if (n == name) {
                     this.pages[n].style.display = 'block';
                 }
@@ -147,8 +147,8 @@ const UI = {
     },
 
     createTabFrame(name, icon, text) {
-        var button = this.sidemenu.addButton(icon, text);
-        var page = this.tabframe.addPage(name);
+        let button = this.sidemenu.addButton(icon, text);
+        let page = this.tabframe.addPage(name);
         button.onclick = (event) => {
             this.tabframe.showPage(name);
         };
@@ -158,10 +158,10 @@ const UI = {
 
 UI.init();
 
-var page1 = UI.createTabFrame('1', document.createElement('a'), '总览');
-var page2 = UI.createTabFrame('2', document.createElement('a'), 'BOT管理');
-var page3 = UI.createTabFrame('3', document.createElement('a'), '插件管理');
-var page4 = UI.createTabFrame('4', document.createElement('a'), '进程管理');
+let page1 = UI.createTabFrame('1', document.createElement('a'), '总览');
+let page2 = UI.createTabFrame('2', document.createElement('a'), 'BOT管理');
+let page3 = UI.createTabFrame('3', document.createElement('a'), '插件管理');
+let page4 = UI.createTabFrame('4', document.createElement('a'), '进程管理');
 
 
 
