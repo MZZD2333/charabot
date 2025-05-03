@@ -1,70 +1,71 @@
-// charabot plugin-list
+// charabot plugin-docs
 'use strict';
 
 import { API } from './api.js';
+import './marked.min.js';
 
-API.pluginGroupList().then((result) => {
-    const root = document.getElementById('root');
-    function createGroup(name, plugins) {
-        let group = document.createElement('div');
-        let title = document.createElement('div');
-        let container = document.createElement('div');
-        group.className = 'group';
-        title.className = 'group-title';
-        container.className = 'group-container';
-        for (let i in plugins) {
-            container.appendChild(createPlugin(plugins[i]));
+const _url = new URL(window.location.href);
+const uuid = _url.searchParams.get('uuid');
+
+if (uuid === null) {
+    location.assign(location.pathname);
+}
+else {
+    API.pluginData(uuid).then(
+        (result) => {
+            const root = document.getElementById('root');
+            let head = document.createElement('div');
+            let icon = document.createElement('img');
+            let name = document.createElement('div');
+            let docs = document.createElement('div');
+            let shadow = docs.attachShadow({ mode: 'open' });
+            let chara = document.createElement('img');
+            chara.src = '/static/img/chara.webp';
+            chara.style.position = 'absolute';
+            chara.style.width = '30px';
+            chara.style.height = '120px';
+            chara.style.top = 0;
+            chara.style.left = '5px';
+            chara.style.opacity = 0.2;
+                    let l = document.createElement('link');
+            let c = document.createElement('body');
+            head.className = 'head';
+            icon.className = 'icon';
+            name.className = 'name';
+            docs.className = 'docs';
+            icon.alt = '';
+            icon.src = `/static/plugin/${uuid}/${result.icon}`;
+            name.innerText = result['name'];
+            head.setAttribute('stat', result['state'])
+            l.href = '/static/css/markdown.css';
+            l.rel = 'stylesheet';
+            c.style.position = 'relative';
+            c.style.display = 'block';
+            c.style.width = '100%';
+            c.style.height = 'auto';
+            shadow.appendChild(l);
+            shadow.appendChild(c);
+            head.appendChild(icon);
+            head.appendChild(name);
+            head.appendChild(chara);
+            root.appendChild(head);
+            root.appendChild(docs);
+            console.log(result);
+            console.log(result['docs']);
+            if (result['docs']) {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', `/static/plugin/${uuid}/${result.docs}`);
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        c.innerHTML = marked.parse(xhr.response);
+                    }
+                };
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.send();
+            }
+
+
         }
-        title.setAttribute('name', name);
-        group.appendChild(title);
-        group.appendChild(container);
-        return group;
-    }
-    function createPlugin(data) {
-        let plugin = document.createElement('div');
-        let icon = document.createElement('img');
-        let info = document.createElement('div');
-        let name = document.createElement('div');
-        let desc = document.createElement('div');
-        let version = document.createElement('div');
-        let authors = document.createElement('div');
-        plugin.className = 'plugin';
-        icon.className = 'icon';
-        info.className = 'info';
-        name.className = 'name';
-        desc.className = 'desc';
-        version.className = 'version';
-        authors.className = 'authors';
-        icon.alt = '';
-        icon.src = `/static/plugin/${data.uuid}/${data.icon}`;
-        name.innerHTML = `${data.index}. ${data.name}`;
-        desc.innerHTML = data.description;
-        version.innerHTML = `version: ${data.version}`;
-        authors.innerHTML = `authors: ${data.authors}`;
-        plugin.setAttribute('stat', data.state);
-        info.appendChild(name);
-        info.appendChild(version);
-        info.appendChild(desc);
-        info.appendChild(authors);
-        plugin.appendChild(icon);
-        plugin.appendChild(info);
-        return plugin;
-    }
-    let head = document.createElement('div');
-    let logo = document.createElement('img');
-    let title = document.createElement('div');
-    let list = document.createElement('div');
-    head.className = 'head';
-    logo.className = 'logo';
-    title.className = 'title';
-    list.className = 'list';
-    title.innerText = '插件列表';
-    logo.src = '/static/img/logo.webp';
-    head.appendChild(logo);
-    head.appendChild(title);
-    for (let i in result) {
-        list.appendChild(createGroup(result[i].name, result[i].plugins));
-    }
-    root.appendChild(head);
-    root.appendChild(list);
-})
+    )
+
+}

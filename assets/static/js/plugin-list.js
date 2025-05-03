@@ -54,13 +54,23 @@ API.pluginGroupList().then((result) => {
     let logo = document.createElement('img');
     let title = document.createElement('div');
     let list = document.createElement('div');
+    let chara = document.createElement('img');
     head.className = 'head';
     logo.className = 'logo';
     title.className = 'title';
     list.className = 'list';
     title.innerText = '插件列表';
+    logo.src = '/static/img/logo.webp';
+    chara.src = '/static/img/chara.webp';
+    chara.style.position = 'absolute';
+    chara.style.width = '30px';
+    chara.style.height = '120px';
+    chara.style.top = 0;
+    chara.style.left = '5px';
+    chara.style.opacity = 0.2;
     head.appendChild(logo);
     head.appendChild(title);
+    head.appendChild(chara);
     for (let i in result) {
         list.appendChild(createGroup(result[i].name, result[i].plugins));
     }
