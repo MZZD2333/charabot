@@ -14,27 +14,31 @@ const UI = {
             this.list.className = 'side-menu-list';
             this.mask.className = 'side-menu-mask';
             let head = document.createElement('div');
-            let logo = document.createElement('div');
+            let title = document.createElement('img');
             let toggle = document.createElement('button');
+            let bg = document.createElement('img');
             head.className = 'side-menu-head';
-            logo.className = 'side-menu-head-logo';
+            title.className = 'side-menu-head-title';
+            bg.className = 'side-menu-bg';
+            title.src = '/static/img/chara-h.webp';
+            bg.src = '/static/img/chara-bg.webp';
             toggle.className = 'side-menu-head-toggle';
             toggle.innerHTML = '<div></div><div></div><div></div>';
             this.node.setAttribute('mode', 1);
             toggle.onclick = (event) => {
                 if (this.node.getAttribute('mode') == 1) {
                     this.node.setAttribute('mode', 0);
-                    logo.style.display = 'none';
                     this.node.style.width = '60px';
                     UI.tabframe.node.style.width = 'calc(100% - 60px)';
                     UI.tabframe.node.style.left = '60px';
+                    UI.tooltips.setContent('点击折叠');
                 }
                 else {
                     this.node.setAttribute('mode', 1);
-                    logo.style.display = 'block';
                     this.node.style.width = '240px';
                     UI.tabframe.node.style.width = 'calc(100% - 240px)';
                     UI.tabframe.node.style.left = '240px';
+                    UI.tooltips.setContent('点击展开');
                 }
             };
             UI.addTooltips(toggle, function () {
@@ -46,10 +50,11 @@ const UI = {
                 }
             });
             head.appendChild(toggle);
-            head.appendChild(logo);
+            head.appendChild(title);
             this.node.appendChild(head);
             this.list.appendChild(this.mask);
             this.node.appendChild(this.list);
+            this.node.appendChild(bg);
             UI.root.appendChild(this.node);
         },
         addButton(icon, text) {
@@ -103,7 +108,9 @@ const UI = {
             this.node.style.display = 'none';
         },
         show(contentHandler) {
-            this.node.innerHTML = contentHandler();
+            if (contentHandler != null){
+                this.node.innerHTML = contentHandler();
+            }
             this.node.style.display = 'block';
         },
         move(x, y) {
@@ -119,6 +126,9 @@ const UI = {
             else {
                 this.node.style.top = y + 10;
             }
+        },
+        setContent(content) {
+            this.node.innerHTML = content;
         },
         init() {
             this.node.innerHTML = '';

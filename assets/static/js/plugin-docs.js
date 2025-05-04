@@ -20,14 +20,14 @@ else {
             let docs = document.createElement('div');
             let shadow = docs.attachShadow({ mode: 'open' });
             let chara = document.createElement('img');
-            chara.src = '/static/img/chara.webp';
+            chara.src = '/static/img/chara-v.webp';
             chara.style.position = 'absolute';
             chara.style.width = '30px';
             chara.style.height = '120px';
             chara.style.top = 0;
             chara.style.left = '5px';
             chara.style.opacity = 0.2;
-                    let l = document.createElement('link');
+            let l = document.createElement('link');
             let c = document.createElement('body');
             head.className = 'head';
             icon.className = 'icon';
@@ -35,6 +35,9 @@ else {
             docs.className = 'docs';
             icon.alt = '';
             icon.src = `/static/plugin/${uuid}/${result.icon}`;
+            icon.onerror = () => {
+                icon.src = '/static/img/plugin-default.webp'
+            };
             name.innerText = result['name'];
             head.setAttribute('stat', result['state'])
             l.href = '/static/css/markdown.css';
@@ -50,8 +53,6 @@ else {
             head.appendChild(chara);
             root.appendChild(head);
             root.appendChild(docs);
-            console.log(result);
-            console.log(result['docs']);
             if (result['docs']) {
                 const xhr = new XMLHttpRequest();
                 xhr.open('GET', `/static/plugin/${uuid}/${result.docs}`);

@@ -37,6 +37,9 @@ API.pluginGroupList().then((result) => {
         authors.className = 'authors';
         icon.alt = '';
         icon.src = `/static/plugin/${data.uuid}/${data.icon}`;
+        icon.onerror = () => {
+            icon.src = '/static/img/plugin-default.webp'
+        };
         name.innerHTML = `${data.index}. ${data.name}`;
         desc.innerHTML = data.description;
         version.innerHTML = `version: ${data.version}`;
@@ -61,7 +64,7 @@ API.pluginGroupList().then((result) => {
     list.className = 'list';
     title.innerText = '插件列表';
     logo.src = '/static/img/logo.webp';
-    chara.src = '/static/img/chara.webp';
+    chara.src = '/static/img/chara-v.webp';
     chara.style.position = 'absolute';
     chara.style.width = '30px';
     chara.style.height = '120px';

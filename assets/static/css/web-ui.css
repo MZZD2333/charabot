@@ -41,12 +41,22 @@ body {
     background-color: rgb(34, 40, 49);
 }
 
-.side-menu-head-logo {
-    position: relative;
+.side-menu-head-title {
+    position: absolute;
     display: block;
-    width: calc(100% - 80px);
-    height: 40px;
-    margin: 10px;
+    width: 144px;
+    height: 36px;
+    margin: 12px 24px 12px 12px;
+    left: 60px;
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    -ms-user-drag: none;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+}
+
+.side-menu[mode='0'] .side-menu-head-title  {
+    opacity: 0;
 }
 
 .side-menu-head-toggle {
@@ -153,6 +163,25 @@ body {
 .side-menu[mode='0'] .side-menu-button-text {
     display: none;
 }
+
+.side-menu-bg {
+    position: absolute;
+    display: block;
+    width: 240px;
+    height: 360px;
+    left: calc(50% - 120px);
+    bottom: 0;
+    opacity: 0.4;
+    transition: opacity 0.3s;
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    -ms-user-drag: none;
+}
+
+.side-menu[mode='0'] .side-menu-bg {
+    opacity: 0.2;
+}
+
 
 .tab-frame {
     position: fixed;

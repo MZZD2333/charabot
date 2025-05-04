@@ -1,0 +1,6 @@
+fastapi
+httpx
+playwright
+psutil
+pydantic >= 2.0
+uvicorn[standard]

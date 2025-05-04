@@ -17,10 +17,10 @@ body::-webkit-scrollbar {
 .head {
     position: relative;
     display: flex;
-    width: calc(96% - 30px);
+    width: calc(100% - 80px);
     height: 80px;
-    padding: 20px calc(2% + 15px);
-    background-color: rgb(35, 42, 63);
+    padding: 20px 40px;
+    background-color: rgb(34, 40, 49);
 }
 
 .logo {
@@ -55,7 +55,20 @@ body::-webkit-scrollbar {
     display: block;
     width: 92%;
     min-height: calc(100% - 180px);
-    margin: 30px 4%;
+    padding: 30px 4%;
+}
+
+.list::before {
+    content: '';
+    position: absolute;
+    display: block;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background-image: url(/static/img/plugin-list-bg.webp);
+    background-size: 100% auto;
+    opacity: 0.8;
 }
 
 .group {
@@ -137,7 +150,7 @@ body::-webkit-scrollbar {
 }
 
 .group-container .plugin[stat='3'] {
-    box-shadow: -10px 0 0 rgb(232, 69, 69,);
+    box-shadow: -10px 0 0 rgb(232, 69, 69, );
 }
 
 

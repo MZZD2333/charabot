@@ -17,10 +17,10 @@ body::-webkit-scrollbar {
 .head {
     position: relative;
     display: flex;
-    width: calc(96% - 30px);
+    width: calc(100% - 80px);
     height: 80px;
-    padding: 20px calc(2% + 15px);
-    background-color: rgb(35, 42, 63);
+    padding: 20px 40px;
+    background-color: rgb(34, 40, 49);
 }
 
 .head[stat='0'] {
