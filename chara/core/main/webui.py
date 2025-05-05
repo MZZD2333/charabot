@@ -107,10 +107,11 @@ class WebUI:
         self.sf = StaticFiles(self.config)
         self.api = APIRouter(prefix='/api')
         self.web = APIRouter(prefix=self.config.path)
-        self._set_apiroute()
-        main.app.mount('/static', self.sf)
-        main.app.include_router(self.api)
-        main.app.include_router(self.web)
+        if self.config.enable:
+            self._set_apiroute()
+            main.app.mount('/static', self.sf)
+            main.app.include_router(self.api)
+            main.app.include_router(self.web)
     
     def _set_apiroute(self):
         @self.web.get('')
@@ -126,39 +127,13 @@ class WebUI:
         
         @self.api.post('/plugin/list')
         async def _():
-            data: list[dict[str, Any]] = [
-                {
-                    'index': plugin.index,
-                    'uuid': plugin.metadata.uuid,
-                    'name': plugin.metadata.name,
-                    'group': plugin.group,
-                    'state': plugin.state.value,
-                    'authors': plugin.metadata.authors,
-                    'version': plugin.metadata.version,
-                    'description': plugin.metadata.description,
-                    'icon': plugin.metadata.icon,
-                    'docs': plugin.metadata.docs,
-                }
-                for plugin in PLUGINS.values()
-            ]
+            data: list[dict[str, Any]] = [plugin.data for plugin in PLUGINS.values()]
             return JSONResponse(data)
 
         @self.api.post('/plugin/{uuid}/data')
         async def _(uuid: str):
             if plugin := PLUGINS.get(uuid, None):
-                data: dict[str, Any] = {
-                    'index': plugin.index,
-                    'uuid': plugin.metadata.uuid,
-                    'name': plugin.metadata.name,
-                    'group': plugin.group,
-                    'state': plugin.state.value,
-                    'authors': plugin.metadata.authors,
-                    'version': plugin.metadata.version,
-                    'description': plugin.metadata.description,
-                    'icon': plugin.metadata.icon,
-                    'docs': plugin.metadata.docs,
-                }                
-                return JSONResponse(data)
+                return JSONResponse(plugin.data)
             return Response(f'插件{uuid}不存在.', status_code=400)
 
         @self.api.post('/plugin/group/list')
@@ -166,21 +141,7 @@ class WebUI:
             data: list[dict[str, Any]] = [
                 {
                     'name': name,
-                    'plugins': [
-                        {
-                            'index': plugin.index,
-                            'uuid': plugin.metadata.uuid,
-                            'name': plugin.metadata.name,
-                            'group': plugin.group,
-                            'state': plugin.state.value,
-                            'authors': plugin.metadata.authors,
-                            'version': plugin.metadata.version,
-                            'description': plugin.metadata.description,
-                            'icon': plugin.metadata.icon,
-                            'docs': plugin.metadata.docs,
-                        }
-                        for plugin in group.values()
-                    ]
+                    'plugins': [plugin.data for plugin in group.values()]
                 }
                 for name, group in PLUGIN_GROUPS.items()
             ]

@@ -2,7 +2,7 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from chara.core.bot import Bot
 from chara.core.plugin.trigger import Trigger
@@ -22,6 +22,14 @@ class MetaData(BaseModel):
     version: str
     docs: Optional[str] = None
     icon: Optional[str] = None
+
+    @field_validator('docs', mode='before')
+    def _field_validator_docs(cls, path: str) -> str:
+        return path.lstrip('/')
+
+    @field_validator('icon', mode='before')
+    def _field_validator_icon(cls, path: str) -> str:
+        return path.lstrip('/')
 
 
 class PluginState(IntEnum):
@@ -165,4 +173,19 @@ class Plugin:
             return wrap(func)
         else:
             return wrap
+    
+    @property
+    def data(self) -> dict[str, Any]:
+        return {
+            'index': self.index,
+            'uuid': self.metadata.uuid,
+            'name': self.metadata.name,
+            'group': self.group,
+            'state': self.state.value,
+            'authors': self.metadata.authors,
+            'version': self.metadata.version,
+            'description': self.metadata.description,
+            'icon': self.metadata.icon,
+            'docs': self.metadata.docs,
+        }
 

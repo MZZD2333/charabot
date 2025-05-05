@@ -42,6 +42,61 @@ git clone https://github.com/MZZD2333/charabot.git
 cd charabot
 pip install -r requirements.txt
 ```
+
+## 配置文件
+```yaml
+# 数据存储目录
+data:
+  directory: ./data
+
+# 接入bot配置, 可配置多个
+bots:
+  - uin: 12345678
+    name: chara
+    nicknames:
+      - chara_chan
+    superusers:
+      - 23456789
+    
+    # Http服务配置
+    http_host: 127.0.0.1
+    http_port: 12001
+
+# 服务器配置
+server:
+  host: 127.0.0.1
+  port: 12000
+  
+  websocket:
+    path: /chara/ws
+
+  webui:
+    path: /web-ui
+    assets: ./assets
+    # static 需在 assets 目录下
+    static: static
+    index: index.html
+
+# 插件配置
+plugins:
+  # 每个插件组会作为一个单独的子进程运行
+  - group_name: core
+    directory: ./plugins/core
+
+# 其他模块配置
+module:
+  fastapi:
+    enable_docs: false
+  
+  uvicorn:
+    log_level: error
+    loop: auto
+
+# 日志配置
+log:
+  level: info
+```
+
 ## 插件制作
 ### 目录(最小)
 ```
@@ -50,7 +105,7 @@ plugin_directory
   └── plugin.yaml
 ```
 
-### 引入文件`plugin.yaml`
+### 引入文件 `plugin.yaml`
 ```yaml
 name: simple-plugin
 # 确保唯一即可无格式要求
@@ -60,8 +115,8 @@ authors:
   - author A
   - author B
 version: 版本
-#文件类型(.jpeg, .png, .gif, .webp, ...)
+# 图标 文件类型(.jpeg, .png, .gif, .webp, ...) [可选]
 icon: icon.png 
-#文件类型(.md)
+# 说明文档 文件类型(.md) [可选]
 docs: README.md
 ```

@@ -131,7 +131,7 @@ class MainProcess:
             while True:
                 data: dict[str, Any] = {
                     'main': {'name': self.process.name, 'pid': self.process.pid, 'cpu': self.process_util.cpu_percent(), 'mem': round(self.process_util.memory_info().vms / 1024 /1024, 2)},
-                    'workers': [{'name': worker.process.name, 'alive': worker.is_alive, 'status': worker.status if worker.is_alive else None} for worker in self.workers.values()]
+                    'workers': [{'name': worker.process.name, 'alive': worker.is_alive, 'status': worker.status if worker.is_alive else None} for worker in self.workers.values()],
                 }
                 await websocket.send_json(data)
                 await asyncio.sleep(3)
@@ -142,6 +142,10 @@ class MainProcess:
     async def _on_startup(self) -> None:
         LOOP = CONTEXT_LOOP.get()
         self.running = True
+
+        if self.config.server.webui.enable:
+            logger.success(f'Web-UI 已在[http://{self.config.server.host}:{self.config.server.port}{self.web_ui.config.path}]开启.')
+
         for worker in self.workers.values():
             if not worker.is_alive:
                 await worker.start()

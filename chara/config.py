@@ -31,6 +31,12 @@ class BotConfig(_BaseConfig):
 class WebSocketConfig(_BaseConfig):
     path: str
 
+    @field_validator('path', mode='before')
+    def _field_validator_path(cls, path: str) -> str:
+        if not path.startswith('/'):
+            path = '/' + path
+        return path
+
 
 class WebUIConfig(_BaseConfig):
     enable: bool
@@ -38,6 +44,12 @@ class WebUIConfig(_BaseConfig):
     assets: Path
     static: Path
     index: str
+
+    @field_validator('path', mode='before')
+    def _field_validator_path(cls, path: str) -> str:
+        if not path.startswith('/'):
+            path = '/' + path
+        return path
 
     @field_validator('assets', mode='before')
     def _field_validator_assets(cls, raw_path: str) -> Path:
@@ -123,9 +135,9 @@ data:
 # 接入bot配置, 可配置多个
 bots:
   - uin: 12345678
-    name: chara_chan
+    name: chara
     nicknames:
-      - chara
+      - chara_chan
     superusers:
       - 23456789
     
@@ -159,6 +171,7 @@ plugins:
 module:
   fastapi:
     enable_docs: false
+  
   uvicorn:
     log_level: error
     loop: auto

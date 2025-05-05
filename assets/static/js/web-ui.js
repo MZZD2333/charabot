@@ -15,7 +15,7 @@ const UI = {
             this.mask.className = 'side-menu-mask';
             let head = document.createElement('div');
             let title = document.createElement('img');
-            let toggle = document.createElement('button');
+            let toggle = document.createElement('div');
             let bg = document.createElement('img');
             head.className = 'side-menu-head';
             title.className = 'side-menu-head-title';
@@ -31,14 +31,14 @@ const UI = {
                     this.node.style.width = '60px';
                     UI.tabframe.node.style.width = 'calc(100% - 60px)';
                     UI.tabframe.node.style.left = '60px';
-                    UI.tooltips.setContent('点击折叠');
+                    UI.tooltips.setContent('点击展开');
                 }
                 else {
                     this.node.setAttribute('mode', 1);
                     this.node.style.width = '240px';
                     UI.tabframe.node.style.width = 'calc(100% - 240px)';
                     UI.tabframe.node.style.left = '240px';
-                    UI.tooltips.setContent('点击展开');
+                    UI.tooltips.setContent('点击折叠');
                 }
             };
             UI.addTooltips(toggle, function () {
@@ -83,17 +83,18 @@ const UI = {
             this.node.className = 'tab-frame';
             UI.root.appendChild(this.node);
         },
-        addPage(name) {
+        addPage(id) {
             let page = document.createElement('div');
             page.className = 'tab-frame-page';
-            this.pages[name] = page;
+            page.id = id;
+            this.pages[id] = page;
             this.node.appendChild(page)
             return page;
         },
-        showPage(name) {
+        showPage(id) {
             for (let n in this.pages) {
-                if (n == name) {
-                    this.pages[n].style.display = 'block';
+                if (n == id) {
+                    this.pages[n].style.display = 'flex';
                 }
                 else {
                     this.pages[n].style.display = 'none';
@@ -108,7 +109,7 @@ const UI = {
             this.node.style.display = 'none';
         },
         show(contentHandler) {
-            if (contentHandler != null){
+            if (contentHandler != null) {
                 this.node.innerHTML = contentHandler();
             }
             this.node.style.display = 'block';
@@ -156,11 +157,11 @@ const UI = {
         return element;
     },
 
-    createTabFrame(name, icon, text) {
+    createTabFrame(id, icon, text) {
         let button = this.sidemenu.addButton(icon, text);
-        let page = this.tabframe.addPage(name);
+        let page = this.tabframe.addPage(id);
         button.onclick = (event) => {
-            this.tabframe.showPage(name);
+            this.tabframe.showPage(id);
         };
         return page;
     }
@@ -168,11 +169,19 @@ const UI = {
 
 UI.init();
 
-let page1 = UI.createTabFrame('1', document.createElement('a'), '总览');
-let page2 = UI.createTabFrame('2', document.createElement('a'), 'BOT管理');
-let page3 = UI.createTabFrame('3', document.createElement('a'), '插件管理');
-let page4 = UI.createTabFrame('4', document.createElement('a'), '进程管理');
+const page1 = UI.createTabFrame('page-1', document.createElement('a'), '总览');
+const col1 = document.createElement('div');
+const col2 = document.createElement('div');
+const col3 = document.createElement('div');
+col1.className = 'col-1';
+col2.className = 'col-2';
+col3.className = 'col-3';
+page1.appendChild(col1);
+page1.appendChild(col2);
+page1.appendChild(col3);
 
+const page2 = UI.createTabFrame('page-2', document.createElement('a'), 'BOT管理');
+const page3 = UI.createTabFrame('page-3', document.createElement('a'), '插件管理');
+const page4 = UI.createTabFrame('page-4', document.createElement('a'), '进程管理');
 
-
-UI.tabframe.showPage('1');
+UI.tabframe.showPage('page-1');

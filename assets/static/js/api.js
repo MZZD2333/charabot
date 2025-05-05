@@ -19,7 +19,7 @@ const API = {
             }
         );
     },
-    monitor(){
+    monitor() {
         var ws = new WebSocket(`ws://${window.location.host}/monitor`);
         return ws;
     },
@@ -40,4 +40,4 @@ const API = {
     },
 };
 
-export {API}
+export { API }

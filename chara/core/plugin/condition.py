@@ -10,7 +10,7 @@ class Condition:
 
     同时使用多个条件时用`&`连接 如 `A & B`
     '''
-    __slots__ = ('checkers')
+    __slots__ = ('checkers', )
 
     def __init__(self, *checkers: Union[ConditionCallable, Executor[bool]]) -> None:
         self.checkers: set[Executor[bool]] = {checker if isinstance(checker, Executor) else Executor[bool](checker) for checker in checkers}
