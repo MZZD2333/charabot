@@ -12,8 +12,8 @@ API.pluginGroupList().then((result) => {
         group.className = 'group';
         title.className = 'group-title';
         container.className = 'group-container';
-        for (let i in plugins) {
-            container.appendChild(createPlugin(plugins[i]));
+        for (let p of plugins) {
+            container.appendChild(createPlugin(p));
         }
         title.setAttribute('name', name);
         group.appendChild(title);
@@ -74,8 +74,8 @@ API.pluginGroupList().then((result) => {
     head.appendChild(logo);
     head.appendChild(title);
     head.appendChild(chara);
-    for (let i in result) {
-        list.appendChild(createGroup(result[i].name, result[i].plugins));
+    for (let d of result) {
+        list.appendChild(createGroup(d.name, d.plugins));
     }
     root.appendChild(head);
     root.appendChild(list);

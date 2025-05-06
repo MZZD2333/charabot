@@ -1,6 +1,8 @@
 // charabot web-ui
 'use strict';
 
+import { API } from './api.js';
+
 const UI = {
     root: document.getElementById('root'),
     sidemenu: {
@@ -164,24 +166,144 @@ const UI = {
             this.tabframe.showPage(id);
         };
         return page;
-    }
+    },
+    createElement(tag, cls = null, id = null) {
+        const e = document.createElement(`${tag}`);
+        if (cls != null) {
+            e.className = cls;
+        }
+        if (id != null) {
+            e.id = id;
+        }
+        return e;
+    },
+    widget: {
+        layout(direction = 0) {
+            const layout = {
+                root: UI.createElement('div', 'con'),
+                child: new Array(),
+                add(...element) {
+                    for (let e of element) {
+                        this.child.push(e);
+                        this.root.appendChild(e);
+                    }
+                    this._refresh();
+                },
+                remove(index) {
+                    this.root.removeChild(this.child[index]);
+                    this._refresh();
+                },
+                _refresh() { }
+            }
+            if (direction === 0) {
+                layout.root.classList.add('flex-h');
+            }
+            else if (direction === 1) {
+                layout.root.classList.add('flex-v');
+            }
+            return layout;
+        },
+        layoutH(col = 0) {
+            const layout = this.layout(0);
+            layout._refresh = () => {
+                const n = layout.child.length;
+                for (let e of layout.child) {
+                    e.style.width = `calc(100% / ${n})`;
+                }
+            };
+            for (let i = 0; i < col; i++) {
+                const con = UI.createElement('div', 'con');
+                con.style.width = `calc(100% / ${col})`;
+                layout.add(con);
+            }
+            return layout;
+        },
+        layoutV(row = 0) {
+            const layout = this.layout(1);
+            layout._refresh = () => {
+                const n = layout.child.length;
+                for (let e of layout.child) {
+                    e.style.height = `calc(100% / ${n})`;
+                }
+            };
+            for (let i = 0; i < row; i++) {
+                const con = UI.createElement('div', 'con');
+                con.style.height = `calc(100% / ${row})`;
+                layout.add(con);
+            }
+            return layout;
+        },
+        card(head = null, styles = null) {
+            const card = {
+                root: UI.createElement('div', 'card'),
+                head: null,
+                body: UI.createElement('div', 'con'),
+            }
+            if (head != null) {
+                card.root.classList.add('flex-v');
+                card.head = UI.createElement('div', 'card-head');
+                card.head.classList.add('flex-h');
+                const con = UI.createElement('div', 'con');
+                if (head instanceof HTMLElement) {
+                    con.appendChild(head);
+                }
+                else {
+                    con.innerHTML = head;
+                }
+                card.head.appendChild(con);
+                card.root.appendChild(card.head);
+            }
+            card.root.appendChild(card.body);
+            if (styles != null) {
+                for (let k in styles) {
+                    card.root.style.setProperty(k, styles[k]);
+                }
+            }
+            return card;
+        },
+        botBar() {
+
+        },
+        botMiniBar() {
+
+        },
+        pluginBar() {
+
+        },
+        pluginMiniBar() {
+
+        },
+    },
 };
 
 UI.init();
 
 const page1 = UI.createTabFrame('page-1', document.createElement('a'), '总览');
-const col1 = document.createElement('div');
-const col2 = document.createElement('div');
-const col3 = document.createElement('div');
-col1.className = 'col-1';
-col2.className = 'col-2';
-col3.className = 'col-3';
-page1.appendChild(col1);
-page1.appendChild(col2);
-page1.appendChild(col3);
+const p1L = UI.widget.layoutH();
+const p1LC1 = UI.widget.layout(1);
+const p1LC2 = UI.widget.layout(1);
+const p1LC3 = UI.widget.layout(1);
+const c1 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
+const c2 = UI.widget.card(null, { 'height': '250px', 'flex-shrink': 0 });
+const c3 = UI.widget.card('进程总览');
+const c4 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
+const c5 = UI.widget.card('插件列表');
+const c6 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
+const c7 = UI.widget.card('BOT列表');
+p1LC1.add(c1.root, c2.root, c3.root);
+p1LC2.add(c4.root, c5.root);
+p1LC3.add(c6.root, c7.root);
+p1L.add(p1LC1.root, p1LC2.root, p1LC3.root);
+page1.appendChild(p1L.root);
 
 const page2 = UI.createTabFrame('page-2', document.createElement('a'), 'BOT管理');
 const page3 = UI.createTabFrame('page-3', document.createElement('a'), '插件管理');
 const page4 = UI.createTabFrame('page-4', document.createElement('a'), '进程管理');
 
 UI.tabframe.showPage('page-1');
+
+const ws = API.monitor();
+ws.onmessage = (ev) => {
+    const data = JSON.parse(ev.data)
+    console.log(data);
+};

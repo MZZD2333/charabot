@@ -5,7 +5,7 @@
   <a href="https://github.com/MZZD2333/charabot/blob/main/">
     <img src="assets/static/img/logo.webp" alt="" style="width: 120px; height: 120px">
   </a>
-  <p align="center">基于Onebot 11协议的QQ bot, 支持插件多进程(分组),可同时管理多个bot.</p>
+  <p align="center">基于Onebot 11协议的QQ bot,支持插件多进程(分组),可同时管理多个bot.</p>
   <a href="https://github.com/MZZD2333/charabot/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/MZZD2333/charabot?style=flat-square
     " alt="">
@@ -39,7 +39,6 @@
 ## 安装
 ```bash
 git clone https://github.com/MZZD2333/charabot.git
-cd charabot
 pip install -r requirements.txt
 ```
 
