@@ -207,11 +207,10 @@ body {
     background-color: rgba(0, 0, 0, 0.4);
     border-left: solid 2px rgba(0, 255, 85, 0.5);
     border-right: solid 2px rgba(0, 255, 85, 0.5);
-    transition-property: width, height;
-    transition-duration: 0.3s;
     backdrop-filter: blur(2px);
     font-size: 12px;
-    color: aliceblue;
+    color: rgb(200, 200, 200);
+    overflow: hidden;
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
@@ -240,7 +239,7 @@ body {
     flex-direction: column;
 }
 
-/* ---START---卡片--- */
+/* ---START---card--- */
 
 .card {
     width: calc(100% - 20px);
@@ -322,4 +321,124 @@ body {
     color: rgba(100, 100, 100, 1);
 }
 
-/* ---END---卡片--- */
+.card>.card-body {
+    position: relative;
+    display: block;
+    width: calc(100% - 10px);
+    height: calc(100% - 10px);
+    padding: 5px;
+}
+
+/* ---END---card--- */
+
+/* ---START---process-mini-bar--- */
+
+.process-mini-bar {
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 36px;
+    background-color: antiquewhite;
+}
+
+.card-body>.process-mini-bar:first-child {
+    margin-bottom: 3px;
+}
+
+.card-body>.process-mini-bar:not(:first-child, :last-child) {
+    margin: 3px 0;
+}
+
+.card-body>.process-mini-bar:last-child {
+    margin-top: 3px;
+}
+
+.process-mini-bar .process-mini-bar-name {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0 10px;
+    font-size: 18px;
+    line-height: 36px;
+    color: rgba(60, 60, 60, 0.8);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    pointer-events: none;
+    transition: color 0.15s;
+    user-select: none;
+}
+
+.process-mini-bar .process-mini-bar-pid,
+.process-mini-bar .process-mini-bar-cpu,
+.process-mini-bar .process-mini-bar-mem {
+    position: relative;
+    display: block;
+    flex-shrink: 0;
+    width: 60px;
+    height: 100%;
+    margin-left: 10px;
+    font-size: 18px;
+    line-height: 36px;
+    color: rgba(60, 60, 60, 0.8);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    pointer-events: none;
+    transition: color 0.15s;
+    user-select: none;
+}
+
+/* ---END---process-mini-bar--- */
+
+/* ---START---process-mini-bar--- */
+
+.plugin-mini-bar {
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 36px;
+    background-color: antiquewhite;
+}
+
+.card-body>.plugin-mini-bar:first-child {
+    margin-bottom: 3px;
+}
+
+.card-body>.plugin-mini-bar:not(:first-child, :last-child) {
+    margin: 3px 0;
+}
+
+.card-body>.plugin-mini-bar:last-child {
+    margin-top: 3px;
+}
+
+.plugin-mini-bar .plugin-mini-bar-icon {
+    position: relative;
+    display: block;
+    width: 36px;
+    height: 100%;
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    -ms-user-drag: none;
+}
+
+.plugin-mini-bar .plugin-mini-bar-name {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0 10px;
+    font-size: 18px;
+    line-height: 36px;
+    color: rgba(60, 60, 60, 0.8);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    pointer-events: none;
+    transition: color 0.15s;
+    user-select: none;
+}
+
+/* ---END---process-mini-bar--- */

@@ -1,3 +1,4 @@
+import asyncio
 import stat
 
 from email.utils import parsedate
@@ -7,6 +8,7 @@ from typing import Any, Optional, TYPE_CHECKING
 from fastapi import APIRouter
 from fastapi.datastructures import Headers
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from fastapi.websockets import WebSocket, WebSocketDisconnect
 from starlette.exceptions import HTTPException
 from starlette.staticfiles import NotModifiedResponse
 from starlette.types import Receive, Scope, Send
@@ -107,11 +109,10 @@ class WebUI:
         self.sf = StaticFiles(self.config)
         self.api = APIRouter(prefix='/api')
         self.web = APIRouter(prefix=self.config.path)
-        if self.config.enable:
-            self._set_apiroute()
-            main.app.mount('/static', self.sf)
-            main.app.include_router(self.api)
-            main.app.include_router(self.web)
+        self._set_apiroute()
+        main.app.mount('/static', self.sf)
+        main.app.include_router(self.api)
+        main.app.include_router(self.web)
     
     def _set_apiroute(self):
         @self.web.get('')
@@ -125,6 +126,21 @@ class WebUI:
                 logger.warning(f'web-ui入口文件({index})不存在')
             return HTMLResponse(content)
         
+        @self.api.post('/process/list')
+        async def _():
+            return JSONResponse(self.main.process_data)
+
+        @self.api.websocket('/process/monitor')
+        async def _(websocket: WebSocket):
+            await websocket.accept()
+            try:
+                while True:
+                    await websocket.send_json(self.main.process_data)
+                    await asyncio.sleep(1)
+            
+            except WebSocketDisconnect:
+                pass
+
         @self.api.post('/plugin/list')
         async def _():
             data: list[dict[str, Any]] = [plugin.data for plugin in PLUGINS.values()]

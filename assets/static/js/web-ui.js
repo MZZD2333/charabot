@@ -2,6 +2,7 @@
 'use strict';
 
 import { API } from './api.js';
+import { SmoothieChart, TimeSeries } from './smoothie.min.js';
 
 const UI = {
     root: document.getElementById('root'),
@@ -112,7 +113,14 @@ const UI = {
         },
         show(contentHandler) {
             if (contentHandler != null) {
-                this.node.innerHTML = contentHandler();
+                const content = contentHandler();
+                if (content instanceof HTMLElement) {
+                    this.node.innerHTML = '';
+                    this.node.appendChild(content);
+                }
+                else {
+                    this.node.innerHTML = contentHandler();
+                }
             }
             this.node.style.display = 'block';
         },
@@ -145,7 +153,6 @@ const UI = {
         this.tabframe.init();
         this.tooltips.init();
     },
-
     addTooltips(element, contentHandler) {
         element.onmouseenter = (event) => {
             this.tooltips.show(contentHandler);
@@ -158,7 +165,6 @@ const UI = {
         };
         return element;
     },
-
     createTabFrame(id, icon, text) {
         let button = this.sidemenu.addButton(icon, text);
         let page = this.tabframe.addPage(id);
@@ -237,7 +243,7 @@ const UI = {
             const card = {
                 root: UI.createElement('div', 'card'),
                 head: null,
-                body: UI.createElement('div', 'con'),
+                body: UI.createElement('div', 'card-body'),
             }
             if (head != null) {
                 card.root.classList.add('flex-v');
@@ -265,45 +271,177 @@ const UI = {
 
         },
         botMiniBar() {
-
         },
         pluginBar() {
 
         },
-        pluginMiniBar() {
+        pluginMiniBar(data) {
+            const bar = {
+                data: data,
+                root: UI.createElement('div', 'plugin-mini-bar'),
+                icon: UI.createElement('img', 'plugin-mini-bar-icon'),
+                name: UI.createElement('div', 'plugin-mini-bar-name'),
+                update(data) {
+                    this.data = data;
+                },
+            }
+            bar.root.setAttribute('state', data.state);
+            bar.icon.src = `/static/plugin/${data.uuid}/${data.icon}`;
+            bar.icon.onerror = () => {
+                bar.icon.src = '/static/img/plugin-default.webp';
+            };
+            bar.name.innerText = data.name;
+            const layout = UI.widget.layout();
+            layout.add(bar.icon);
+            layout.add(bar.name);
+            bar.root.appendChild(layout.root);
+            UI.addTooltips(bar.root, () => {
+                return bar.data.name;
+            });
+            return bar;
+        },
+        processBar() {
 
+        },
+        processMiniBar() {
+            const bar = {
+                root: UI.createElement('div', 'process-mini-bar'),
+                name: UI.createElement('div', 'process-mini-bar-name'),
+                pid: UI.createElement('div', 'process-mini-bar-pid'),
+                cpu: UI.createElement('div', 'process-mini-bar-cpu'),
+                mem: UI.createElement('div', 'process-mini-bar-mem'),
+                async update(name, alive, pid, cpu, mem) {
+                    this.name.innerText = name;
+                    this.pid.innerText = pid;
+                    this.cpu.innerText = cpu;
+                    this.mem.innerText = mem;
+                    cpuline.append(Date.now(), cpu);
+                    memline.append(Date.now(), mem);
+                },
+            }
+            bar.root.appendChild(bar.name);
+            bar.root.appendChild(bar.pid);
+            bar.root.appendChild(bar.cpu);
+            bar.root.appendChild(bar.mem);
+            const tooltip = UI.widget.layout(1);
+            const cpucanv = UI.createElement('canvas');
+            const memcanv = UI.createElement('canvas');
+            cpucanv.style.width = '300px';
+            cpucanv.style.height = '150px';
+            memcanv.style.width = '300px';
+            memcanv.style.height = '150px';
+            tooltip.add(cpucanv, memcanv)
+            const opt = {
+                minValue: 0,
+                maxValueScale: 1.05,
+                minValueScale: 0.95,
+                millisPerPixel: 20,
+                grid:
+                {
+                    fillStyle: 'transparent',
+                    strokeStyle: 'transparent',
+                    millisPerLine: 1000,
+                    borderVisible: false
+                },
+                labels:
+                {
+                    fillStyle: '#ffffff',
+                    fontSize: 12,
+                    precision: 2,
+                }
+            };
+            const cpuchart = new SmoothieChart(opt);
+            const memchart = new SmoothieChart(opt);
+            const cpuline = new TimeSeries();
+            const memline = new TimeSeries();
+            cpuchart.addTimeSeries(cpuline, { strokeStyle: 'rgb(0, 137, 228)', lineWidth: 1 });
+            memchart.addTimeSeries(memline, { strokeStyle: 'rgb(255, 217, 0)', lineWidth: 1 });
+            cpuchart.streamTo(cpucanv, 3000);
+            memchart.streamTo(memcanv, 3000);
+            UI.addTooltips(bar.root, () => {
+                return tooltip.root;
+            });
+            return bar;
         },
     },
 };
 
 UI.init();
 
-const page1 = UI.createTabFrame('page-1', document.createElement('a'), '总览');
-const p1L = UI.widget.layoutH();
-const p1LC1 = UI.widget.layout(1);
-const p1LC2 = UI.widget.layout(1);
-const p1LC3 = UI.widget.layout(1);
-const c1 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
-const c2 = UI.widget.card(null, { 'height': '250px', 'flex-shrink': 0 });
-const c3 = UI.widget.card('进程总览');
-const c4 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
-const c5 = UI.widget.card('插件列表');
-const c6 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
-const c7 = UI.widget.card('BOT列表');
-p1LC1.add(c1.root, c2.root, c3.root);
-p1LC2.add(c4.root, c5.root);
-p1LC3.add(c6.root, c7.root);
-p1L.add(p1LC1.root, p1LC2.root, p1LC3.root);
-page1.appendChild(p1L.root);
+class Monitor {
+    constructor() {
+        this.handlers = new Array();
+        this.connetc();
+    }
+    connetc() {
+        this.ws = API.monitor();
+        this.ws.onmessage = (ev) => {
+            const data = JSON.parse(ev.data);
+            for (let handler of this.handlers) {
+                handler(data);
+            }
+        };
+        this.ws.onclose = () => {
+            setTimeout(this.connetc, 3000)
+        };
+        this.ws.onerror = () => {
+            this.ws.close();
+        }
+    }
+    addHandler(handler) {
+        this.handlers.push(handler);
+    }
+}
 
-const page2 = UI.createTabFrame('page-2', document.createElement('a'), 'BOT管理');
+const monitor = new Monitor();
+
+!function () {
+    const page1 = UI.createTabFrame('page-1', document.createElement('a'), '总览');
+    const p1L0 = UI.widget.layoutH();
+    const p1L1 = UI.widget.layout(1);
+    const p1L2 = UI.widget.layout(1);
+    const p1L3 = UI.widget.layout(1);
+    const c1 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
+    const c2 = UI.widget.card(null, { 'height': '250px', 'flex-shrink': 0 });
+    const c3 = UI.widget.card('进程总览');
+    const c4 = UI.widget.card(null, { 'width': '100%', 'height': '150px', 'margin-left': 0, 'margin-right': 0, 'flex-shrink': 0 });
+    const c5 = UI.widget.card('插件列表', { 'width': '100%', 'margin-left': 0, 'margin-right': 0 });
+    const c6 = UI.widget.card(null, { 'height': '150px', 'flex-shrink': 0 });
+    const c7 = UI.widget.card('BOT列表');
+    p1L1.add(c1.root, c2.root, c3.root);
+    p1L2.add(c4.root, c5.root);
+    p1L3.add(c6.root, c7.root);
+    p1L0.add(p1L1.root, p1L2.root, p1L3.root);
+    page1.appendChild(p1L0.root);
+    API.processList().then((data) => {
+        const bars = new Map();
+        const main = UI.widget.processMiniBar();
+        c3.body.appendChild(main.root);
+        main.update(data.main.name, data.main.alive, data.main.pid, data.main.cpu, data.main.mem);
+        for (let worker of data.workers) {
+            const bar = UI.widget.processMiniBar();
+            c3.body.appendChild(bar.root);
+            bars[worker.name] = bar;
+            bar.update(worker.name, worker.alive, worker.pid, worker.cpu, worker.mem)
+        }
+        monitor.addHandler((d) => {
+            main.update(d.main.name, d.main.alive, d.main.pid, d.main.cpu, d.main.mem);
+            for (let worker of d.workers) {
+                bars[worker.name].update(worker.name, worker.alive, worker.pid, worker.cpu, worker.mem);
+            }
+        })
+    });
+    API.pluginList().then((data) => {
+        for (let plugin of data) {
+            const bar = UI.widget.pluginMiniBar(plugin);
+            c5.body.appendChild(bar.root);
+        }
+    });
+}();
+
+const page2 = UI.createTabFrame('page-2', document.createElement('a'), '进程管理');
 const page3 = UI.createTabFrame('page-3', document.createElement('a'), '插件管理');
-const page4 = UI.createTabFrame('page-4', document.createElement('a'), '进程管理');
+const page4 = UI.createTabFrame('page-4', document.createElement('a'), 'BOT管理');
 
 UI.tabframe.showPage('page-1');
 
-const ws = API.monitor();
-ws.onmessage = (ev) => {
-    const data = JSON.parse(ev.data)
-    console.log(data);
-};

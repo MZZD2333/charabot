@@ -10,7 +10,6 @@ from typing import Any
 import uvicorn
 
 from fastapi import FastAPI
-from fastapi.websockets import WebSocket, WebSocketDisconnect
 from psutil import Process as ProcessUtil
 
 from chara.config import GlobalConfig
@@ -92,7 +91,8 @@ class MainProcess:
         else:
             self.app = FastAPI(docs_url=None, redoc_url=None)
         self.dispatcher = Dispatcher(self, config)
-        self.web_ui = WebUI(self, config)
+        if self.config.server.webui.enable:
+            self.web_ui = WebUI(self, config)
         self.server = uvicorn.Server(
             uvicorn.Config(
                 self.app,
@@ -123,35 +123,25 @@ class MainProcess:
             await self._on_shutdown()
         
         self.app.router.lifespan_context = lifespan
-        self.app.websocket_route('/monitor')(self._monitor)
-   
-    async def _monitor(self, websocket: WebSocket):
-        await websocket.accept()
-        try:
-            while True:
-                data: dict[str, Any] = {
-                    'main': {'name': self.process.name, 'pid': self.process.pid, 'cpu': self.process_util.cpu_percent(), 'mem': round(self.process_util.memory_info().vms / 1024 /1024, 2)},
-                    'workers': [{'name': worker.process.name, 'alive': worker.is_alive, 'status': worker.status if worker.is_alive else None} for worker in self.workers.values()],
-                }
-                await websocket.send_json(data)
-                await asyncio.sleep(3)
-        
-        except WebSocketDisconnect:
-            pass
+    
+    @property
+    def process_data(self) -> dict[str, Any]:
+        return {
+            'main': {'name': self.process.name, 'pid': self.process.pid, 'cpu': self.process_util.cpu_percent(), 'mem': round(self.process_util.memory_info().vms / 1024 /1024, 2)},
+            'workers': [{'name': worker.process.name, 'alive': worker.is_alive} | worker.status if worker.is_alive else None for worker in self.workers.values()],
+        }
     
     async def _on_startup(self) -> None:
         LOOP = CONTEXT_LOOP.get()
         self.running = True
-
-        if self.config.server.webui.enable:
-            logger.success(f'Web-UI 已在[http://{self.config.server.host}:{self.config.server.port}{self.web_ui.config.path}]开启.')
-
         for worker in self.workers.values():
             if not worker.is_alive:
                 await worker.start()
 
         self.dispatcher.update_pipes([cp.process for cp in self.workers.values()])
         LOOP.create_task(self.dispatcher.event_loop())
+        if self.config.server.webui.enable:
+            logger.success(f'Web-UI 已在[http://{self.config.server.host}:{self.config.server.port}{self.web_ui.config.path}]开启.')
 
     async def _on_shutdown(self) -> None:
         LOOP = CONTEXT_LOOP.get()

@@ -20,8 +20,11 @@ const API = {
         );
     },
     monitor(){
-        var ws = new WebSocket(`ws://${window.location.host}/monitor`);
+        var ws = new WebSocket(`ws://${window.location.host}/api/process/monitor`);
         return ws;
+    },
+    processList() {
+        return this.request('post', '/api/process/list');
     },
     pluginList() {
         return this.request('post', '/api/plugin/list');

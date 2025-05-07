@@ -38,7 +38,7 @@ API.pluginGroupList().then((result) => {
         icon.alt = '';
         icon.src = `/static/plugin/${data.uuid}/${data.icon}`;
         icon.onerror = () => {
-            icon.src = '/static/img/plugin-default.webp'
+            icon.src = '/static/img/plugin-default.webp';
         };
         name.innerHTML = `${data.index}. ${data.name}`;
         desc.innerHTML = data.description;
