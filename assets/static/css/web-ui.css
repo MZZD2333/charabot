@@ -3,67 +3,30 @@ body {
     padding: 0;
 }
 
-#root {
+body * {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    width: 100%;
-    height: 100%;
+    display: block;
 }
 
-.side-menu {
-    position: fixed;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+#root {}
+
+#side-menu {
     flex-shrink: 0;
     width: 240px;
-    height: 100%;
     z-index: 10;
     background-color: rgb(34, 40, 49);
-    overflow-x: hidden;
-    overflow-y: scroll;
     transition: width 0.2s;
     user-select: none;
     box-shadow: 3px 0 5px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
 }
 
-.side-menu::-webkit-scrollbar {
-    display: none;
-}
-
-.side-menu-head {
-    position: sticky;
-    display: flex;
-    width: 100%;
+#side-menu>.head {
     height: 60px;
-    top: 0;
-    z-index: 12;
-    background-color: rgb(34, 40, 49);
 }
 
-.side-menu-head-title {
-    position: absolute;
-    display: block;
-    width: 144px;
-    height: 36px;
-    margin: 12px 24px 12px 12px;
-    left: 60px;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    -ms-user-drag: none;
-    opacity: 0.3;
-    transition: opacity 0.3s;
-}
-
-.side-menu[mode='0'] .side-menu-head-title {
-    opacity: 0;
-}
-
-.side-menu-head-toggle {
-    position: relative;
-    display: block;
+#side-menu>.head>.fold {
+    flex-shrink: 0;
     width: 36px;
     height: 36px;
     margin: 12px;
@@ -72,7 +35,7 @@ body {
     border: none;
 }
 
-.side-menu-head-toggle div {
+#side-menu>.head>.fold>div {
     position: absolute;
     width: 28px;
     height: 2px;
@@ -81,29 +44,43 @@ body {
     transition: all 0.3s ease;
 }
 
-.side-menu-head-toggle div:nth-child(1) {
+#side-menu>.head>.fold>div:nth-child(1) {
     top: 8px;
 }
 
-.side-menu-head-toggle div:nth-child(2) {
+#side-menu>.head>.fold>div:nth-child(2) {
     top: 18px;
 }
 
-.side-menu-head-toggle div:nth-child(3) {
+#side-menu>.head>.fold>div:nth-child(3) {
     top: 28px;
 }
 
-.side-menu-list {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: calc(100% - 60px);
-    z-index: 11;
+#side-menu>.head>.logo {
+    width: 144px;
+    height: 36px;
+    margin: 12px 28px 12px 8px;
+    opacity: 0.3;
+    transition: opacity 0.3s;
 }
 
-.side-menu-mask {
+.side-menu[mode='0']>.head>.logo {
+    opacity: 0;
+}
+
+
+#side-menu>.list {
+    z-index: 11;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+#side-menu>.list::-webkit-scrollbar {
+    display: none;
+}
+
+#side-menu>.list>.mask {
     position: absolute;
-    display: block;
     width: 100%;
     height: 50px;
     background-color: rgba(255, 255, 255, 0.1);
@@ -113,332 +90,63 @@ body {
     pointer-events: none;
 }
 
-.side-menu-button {
-    position: relative;
-    display: inline-flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    align-content: flex-start;
+#side-menu>.list>.btn {
     width: 100%;
     height: 50px;
-    margin: 0;
-    padding: 0;
-    background: none;
-    border: none;
 }
 
-.side-menu-button-icon {
-    position: relative;
-    display: block;
+#side-menu>.list>.btn>.icon {
     flex-shrink: 0;
     width: 36px;
     height: 36px;
     padding: 7px 12px;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    -ms-user-drag: none;
 }
 
-.side-menu-button-text {
-    position: relative;
-    display: block;
+#side-menu>.list>.btn>.text {
     height: 36px;
     padding: 7px;
     line-height: 36px;
     color: #ecf0f1;
     font-size: 16px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
-.side-menu[mode='0'] .side-menu-button-text {
+#side-menu[fold='1']>.list>.btn>.text {
     display: none;
 }
 
-.side-menu-bg {
+#side-menu>.bg {
     position: absolute;
-    display: block;
     width: 240px;
     height: 360px;
     left: calc(50% - 120px);
     bottom: 0;
     opacity: 0.4;
     transition: opacity 0.3s;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    -ms-user-drag: none;
 }
 
-.side-menu[mode='0'] .side-menu-bg {
+#side-menu[fold='1']>.bg {
     opacity: 0.2;
 }
 
+#tab-frame {}
 
-.tab-frame {
+#tool-tips {
     position: fixed;
-    display: block;
-    width: calc(100% - 240px);
-    height: 100%;
-    left: 240px;
-    background-color: rgb(245, 245, 245);
-    overflow-x: hidden;
-    overflow-y: scroll;
-    transition-property: width, left;
-    transition-duration: 0.2s;
-}
-
-.tab-frame::-webkit-scrollbar {
-    display: none;
-}
-
-.tab-frame-page {
-    position: absolute;
-    display: flex;
-    width: 100%;
-    height: 100%;
-    background-color: rgb(245, 245, 245);
-}
-
-.tooltips {
-    position: fixed;
-    display: none;
     width: auto;
     height: auto;
     padding: 2px;
     z-index: 1000;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.5);
     border-left: solid 2px rgba(0, 255, 85, 0.5);
     border-right: solid 2px rgba(0, 255, 85, 0.5);
     backdrop-filter: blur(2px);
     font-size: 12px;
     color: rgb(200, 200, 200);
     overflow: hidden;
-    pointer-events: none;
-    user-select: none;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    -ms-user-drag: none;
+    opacity: 0;
+    transition-property: opacity, width, height;
+    transition-duration: 0.2s;
 }
-
-.con {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.flex-h,
-.flex-v,
-.flex {
-    position: relative;
-    display: flex;
-}
-
-.flex-h {
-    flex-direction: row;
-}
-
-.flex-v {
-    flex-direction: column;
-}
-
-/* ---START---card--- */
-
-.card {
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    margin: 10px;
-    background: rgb(255, 255, 255);
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
-}
-
-.flex-h>.card:first-child {
-    margin-right: 5px;
-}
-
-.flex-h>.card:not(:first-child, :last-child) {
-    margin: 10px 5px;
-}
-
-.flex-h>.card:last-child {
-    margin-left: 5px;
-}
-
-.flex-v>.card:first-child {
-    margin-bottom: 5px;
-}
-
-.flex-v>.card:not(:first-child, :last-child) {
-    margin: 5px 10px;
-}
-
-.flex-v>.card:last-child {
-    margin-top: 5px;
-}
-
-.card>.card-head {
-    position: relative;
-    width: 100%;
-    max-height: 40px;
-    min-height: 40px;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
-}
-
-.card>.card-head::before {
-    content: '';
-    position: relative;
-    display: block;
-    width: 5px;
-    height: 30px;
-    margin: 5px;
-    background-color: rgba(150, 150, 150, 0.4);
-    transition: background-color 0.15s;
-}
-
-.card:hover>.card-head::before {
-    background-color: rgba(79, 224, 22, 0.4);
-}
-
-.card>.card-head>.con {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    margin-right: 15px;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 40px;
-    color: rgba(100, 100, 100, 0.8);
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    pointer-events: none;
-    transition: color 0.15s;
-    user-select: none;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    -ms-user-drag: none;
-}
-
-.card:hover>.card-head>.con {
-    color: rgba(100, 100, 100, 1);
-}
-
-.card>.card-body {
-    position: relative;
-    display: block;
-    width: calc(100% - 10px);
-    height: calc(100% - 10px);
-    padding: 5px;
-}
-
-/* ---END---card--- */
-
-/* ---START---process-mini-bar--- */
-
-.process-mini-bar {
-    position: relative;
-    display: flex;
-    width: 100%;
-    height: 36px;
-    background-color: antiquewhite;
-}
-
-.card-body>.process-mini-bar:first-child {
-    margin-bottom: 3px;
-}
-
-.card-body>.process-mini-bar:not(:first-child, :last-child) {
-    margin: 3px 0;
-}
-
-.card-body>.process-mini-bar:last-child {
-    margin-top: 3px;
-}
-
-.process-mini-bar .process-mini-bar-name {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    margin: 0 10px;
-    font-size: 18px;
-    line-height: 36px;
-    color: rgba(60, 60, 60, 0.8);
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    pointer-events: none;
-    transition: color 0.15s;
-    user-select: none;
-}
-
-.process-mini-bar .process-mini-bar-pid,
-.process-mini-bar .process-mini-bar-cpu,
-.process-mini-bar .process-mini-bar-mem {
-    position: relative;
-    display: block;
-    flex-shrink: 0;
-    width: 60px;
-    height: 100%;
-    margin-left: 10px;
-    font-size: 18px;
-    line-height: 36px;
-    color: rgba(60, 60, 60, 0.8);
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    pointer-events: none;
-    transition: color 0.15s;
-    user-select: none;
-}
-
-/* ---END---process-mini-bar--- */
-
-/* ---START---process-mini-bar--- */
-
-.plugin-mini-bar {
-    position: relative;
-    display: flex;
-    width: 100%;
-    height: 36px;
-    background-color: antiquewhite;
-}
-
-.card-body>.plugin-mini-bar:first-child {
-    margin-bottom: 3px;
-}
-
-.card-body>.plugin-mini-bar:not(:first-child, :last-child) {
-    margin: 3px 0;
-}
-
-.card-body>.plugin-mini-bar:last-child {
-    margin-top: 3px;
-}
-
-.plugin-mini-bar .plugin-mini-bar-icon {
-    position: relative;
-    display: block;
-    width: 36px;
-    height: 100%;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    -ms-user-drag: none;
-}
-
-.plugin-mini-bar .plugin-mini-bar-name {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    margin: 0 10px;
-    font-size: 18px;
-    line-height: 36px;
-    color: rgba(60, 60, 60, 0.8);
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    pointer-events: none;
-    transition: color 0.15s;
-    user-select: none;
-}
-
-/* ---END---process-mini-bar--- */
