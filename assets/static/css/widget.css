@@ -51,7 +51,7 @@
 }
 
 .card:hover>.head>.state{
-    background-color: rgba(79, 224, 22, 0.4);
+    background-color: rgba(32, 200, 252, 0.6);
 }
 
 .card>.head>.title {
@@ -68,4 +68,8 @@
 
 .card:hover>.head>.title {
     color: rgba(100, 100, 100, 1);
+}
+
+.card>.body{
+    height: calc(100% - 40px);
 }

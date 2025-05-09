@@ -1,3 +1,9 @@
+@font-face {
+    font-display: block;
+    font-family: icon;
+    src: url('../font/bootstrap-icons.woff2') format("woff2");
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -8,7 +14,9 @@ body * {
     display: block;
 }
 
-#root {}
+#root {
+    background-color: rgb(245, 245, 245);
+}
 
 #side-menu {
     flex-shrink: 0;
@@ -30,30 +38,15 @@ body * {
     width: 36px;
     height: 36px;
     margin: 12px;
-    padding: 0;
-    background: none;
-    border: none;
+    text-align: center;
 }
 
-#side-menu>.head>.fold>div {
-    position: absolute;
-    width: 28px;
-    height: 2px;
-    left: 4px;
-    background: rgba(255, 255, 255, 0.4);
-    transition: all 0.3s ease;
-}
-
-#side-menu>.head>.fold>div:nth-child(1) {
-    top: 8px;
-}
-
-#side-menu>.head>.fold>div:nth-child(2) {
-    top: 18px;
-}
-
-#side-menu>.head>.fold>div:nth-child(3) {
-    top: 28px;
+#side-menu>.head>.fold::before {
+    content: '\F479';
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 36px;
+    font-family: icon;
+    font-size: 36px;
 }
 
 #side-menu>.head>.logo {
@@ -107,7 +100,7 @@ body * {
     padding: 7px;
     line-height: 36px;
     color: #ecf0f1;
-    font-size: 16px;
+    font-size: 18px;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -131,7 +124,9 @@ body * {
     opacity: 0.2;
 }
 
-#tab-frame {}
+#tab-frame {
+    max-height: 100%;
+}
 
 #tool-tips {
     position: fixed;
@@ -139,14 +134,162 @@ body * {
     height: auto;
     padding: 2px;
     z-index: 1000;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6);
     border-left: solid 2px rgba(0, 255, 85, 0.5);
     border-right: solid 2px rgba(0, 255, 85, 0.5);
     backdrop-filter: blur(2px);
     font-size: 12px;
-    color: rgb(200, 200, 200);
+    color: rgb(220, 220, 220);
     overflow: hidden;
     opacity: 0;
     transition-property: opacity, width, height;
     transition-duration: 0.2s;
 }
+
+/* ---PAGE[1]--- */
+
+#page-1 .card {
+    overflow: hidden;
+}
+
+.process-list {
+    width: calc(100% - 10px);
+    height: calc(100% - 20px);
+    margin: 10px 5px;
+}
+
+.process {
+    height: 36px;
+    margin-bottom: 5px;
+    background-color: rgba(183, 236, 255, 0.3);
+    box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.1);
+}
+
+.process::before {
+    content: '';
+    min-width: 3px;
+    height: 100%;
+}
+
+.process[alive='0']::before {
+    background-color: rgb(123, 124, 125);
+}
+
+.process[alive='1']::before {
+    background-color: rgb(15, 197, 85);
+}
+
+.process-list>.process:last-child {
+    margin-bottom: 0;
+}
+
+.process>.name,
+.process>.pid,
+.process>.cpu,
+.process>.mem {
+    margin-left: 5px;
+    font-size: 16px;
+    line-height: 36px;
+    color: rgb(63, 63, 63);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    user-select: none;
+}
+
+.process>.name {
+    width: 100%;
+    min-width: 60px;
+    margin-left: 10px;
+}
+
+.process>.pid {
+    min-width: 60px;
+}
+
+.process>.cpu {
+    min-width: 70px;
+    line-height: 36px;
+}
+
+.process>.cpu::before {
+    content: '\F2D6';
+    margin-right: 5px;
+    font-family: icon;
+    font-size: 14px;
+}
+
+.process>.cpu::after {
+    content: '%';
+    position: absolute;
+    right: 5px;
+}
+
+.process>.mem {
+    min-width: 120px;
+}
+
+.process>.mem::before {
+    content: '\F6E3';
+    margin-right: 5px;
+    font-family: icon;
+    font-size: 14px;
+}
+
+.process>.mem::after {
+    content: 'MB';
+    position: absolute;
+    right: 5px;
+}
+
+.process>.fold {
+    position: absolute;
+    flex-flow: row-reverse;
+    background-color: rgb(245, 245, 245);
+    transition: opacity 0.4s;
+}
+
+.process>.fold>.close,
+.process>.fold>.start,
+.process>.fold>.restart {
+    min-width: 48px;
+    color: rgb(63, 63, 63);
+    font-family: icon;
+    font-size: 24px;
+    line-height: 36px;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+.process>.fold>.close::before {
+    content: '\F593';
+}
+
+.process>.fold>.start::before {
+    content: '\F4F5';
+}
+
+.process>.fold>.restart::before {
+    content: '\F130';
+}
+
+.process>.fold>.close:hover {
+    background-color: rgba(232, 69, 69, 0.8);
+}
+
+.process>.fold>.start:hover {
+    background-color: rgba(15, 197, 85, 0.8);
+}
+
+.process>.fold>.restart:hover {
+    background-color: rgba(0, 217, 255, 0.8);
+}
+
+.process>.fold>.state {
+    width: 100%;
+    margin-left: 10px;
+    text-align: left;
+    color: rgb(63, 63, 63);
+    font-size: 16px;
+    line-height: 36px;
+}
+/* ---PAGE[1]--- */

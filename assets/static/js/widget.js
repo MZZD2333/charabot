@@ -24,7 +24,7 @@ const Widget = {
     },
     layout(direction = 0, cls = null, id = null, styles = null, attributes = null) {
         const layout = {
-            root: Widget.createElement('div', cls, id, styles, attributes),
+            root: Widget.createElement('div', direction === 0 ? 'flex-h con' : 'flex-v con', id, styles, attributes),
             child: new Array(),
             add(...element) {
                 for (let e of element) {
@@ -39,13 +39,15 @@ const Widget = {
             },
             refresh() { }
         }
-        layout.root.classList.add(direction === 0 ? 'flex-h' : 'flex-v', 'con');
+        if (cls !== null) {
+            layout.root.classList.add(cls);
+        }
         return layout;
     },
     card(title = null, cls = null, id = null, styles = null, attributes = null) {
         const card = {
             root: Widget.createElement(),
-            layout: Widget.layout(1, cls, id, styles, attributes),
+            layout: Widget.layout(1, 'card', id, styles, attributes),
             head: {
                 root: Widget.createElement(),
                 layout: Widget.layout(0, 'head'),
@@ -62,11 +64,13 @@ const Widget = {
                 card.head.title.innerHTML = title;
             }
         }
+        if (cls !== null) {
+            layout.root.classList.add(cls);
+        }
         card.root = card.layout.root;
         card.head.root = card.head.layout.root;
         card.head.layout.add(card.head.state, card.head.title);
         card.layout.add(card.head.root, card.body);
-        card.root.classList.add('card');
         return card;
     },
 }

@@ -17,7 +17,6 @@ const UI = {
             const fold = Widget.createElement('div', 'fold');
             const logo = Widget.createElement('img', 'logo fbd-dps');
             const bg = Widget.createElement('img', 'bg');
-            fold.innerHTML = '<div></div>'.repeat(3);
             logo.src = '/static/img/chara-h.webp';
             bg.src = '/static/img/chara-bg.webp';
             head.add(fold, logo);
@@ -56,7 +55,7 @@ const UI = {
         },
         showPage(id) {
             for (let n in this.pages) {
-                this.pages[n].style.display = n == id ? 'flex' : 'none';
+                this.pages[n].style.display = n == id ? 'block' : 'none';
             };
         },
     },
@@ -124,8 +123,8 @@ const UI = {
                 if (n !== null) {
                     clearTimeout(n);
                 }
-                element.onmousemove = null;
-                element.onmouseleave = null;
+                element.onmousemove = undefined;
+                element.onmouseleave = undefined;
                 this.tooltips.hide();
             };
             n = setTimeout(() => {
@@ -143,9 +142,9 @@ const UI = {
         button.onclick = () => { this.tabframe.showPage(id) };
         return page;
     },
-}
+};
 
-UI.init()
+UI.init();
 
 class Monitor {
     constructor() {
@@ -170,10 +169,9 @@ class Monitor {
     addHandler(handler) {
         this.handlers.push(handler);
     }
-}
+};
 
 const monitor = new Monitor();
-
 
 !function () {
     function botMiniBar() {
@@ -198,13 +196,27 @@ const monitor = new Monitor();
         return bar;
     }
     function processMiniBar() {
+        const data = {
+            name: '',
+            busy: 0,
+        };
         const bar = {
-            root: Widget.createElement('div', 'process'),
+            data: new Map(),
+            layout: Widget.layout(0, 'process', null, null, { alive: 0, busy: 0 }),
             name: Widget.createElement('div', 'name'),
             pid: Widget.createElement('div', 'pid'),
             cpu: Widget.createElement('div', 'cpu'),
             mem: Widget.createElement('div', 'mem'),
+            fold: {
+                layout: Widget.layout(0, 'fold', null, { 'opacity': 0, 'pointer-events': 'none' }),
+                state: Widget.createElement('div', 'state'),
+                close: Widget.createElement('div', 'close'),
+                start: Widget.createElement('div', 'start'),
+                restart: Widget.createElement('div', 'restart'),
+            },
             async update(name, alive, pid, cpu, mem) {
+                data.name = name;
+                this.layout.root.setAttribute('alive', alive ? 1 : 0)
                 this.name.innerText = name;
                 this.pid.innerText = pid;
                 this.cpu.innerText = cpu;
@@ -213,52 +225,102 @@ const monitor = new Monitor();
                 memline.append(Date.now(), mem);
             },
         }
-        bar.root.appendChild(bar.name);
-        bar.root.appendChild(bar.pid);
-        bar.root.appendChild(bar.cpu);
-        bar.root.appendChild(bar.mem);
-        const tooltip = Widget.layout(1);
-        const cpucanv = Widget.createElement('canvas');
-        const memcanv = Widget.createElement('canvas');
-        cpucanv.setAttribute('width', 250);
-        cpucanv.setAttribute('height', 50);
-        memcanv.setAttribute('width', 250);
-        memcanv.setAttribute('height', 50);
-        const a = Widget.createElement();
-        const b = Widget.createElement();
-        a.innerHTML = 'CPU占用';
-        b.innerHTML = '内存占用';
-        tooltip.add(a, cpucanv, b, memcanv)
-        const opt = {
-            minValue: 0,
-            millisPerPixel: 20,
-            grid:
-            {
-                fillStyle: 'transparent',
-                strokeStyle: 'transparent',
-                verticalSections: 3,
-                borderVisible: false
-            },
-            labels:
-            {
-                fillStyle: '#ffffff',
-                fontSize: 12,
-                precision: 2,
+        function reset() {
+            console.log(23333)
+            data.busy = 0;
+            bar.layout.root.setAttribute('busy', 0);
+            bar.fold.state.innerText = '请选择操作';
+        };
+        reset();
+        bar.fold.close.onclick = () => {
+            if (!data.busy) {
+                data.busy = 1;
+                bar.layout.root.setAttribute('busy', 1);
+                API.processReload(data.name).then(reset);
+                bar.fold.state.innerText = '关闭进程中';
             }
         };
-        const cpuchart = new SmoothieChart(opt);
-        const memchart = new SmoothieChart(opt);
+        bar.fold.start.onclick = () => {
+            if (!data.busy) {
+                data.busy = 1;
+                bar.layout.root.setAttribute('busy', 1);
+                API.processReload(data.name).then(reset);
+                bar.fold.state.innerText = '开启进程中';
+            }
+        };
+        bar.fold.restart.onclick = () => {
+            if (!data.busy) {
+                data.busy = 1;
+                bar.layout.root.setAttribute('busy', 1);
+                API.processReload(data.name).then(reset);
+                bar.fold.state.innerText = '重启进程中';
+            }
+        };
+        bar.layout.root.onclick = () => {
+            bar.fold.layout.root.style.opacity = 1;
+            bar.fold.layout.root.style.pointerEvents = 'auto';
+            bar.layout.root.onmouseenter = undefined;
+            bar.layout.root.onmousemove = undefined;
+
+            UI.addTooltips(bar.fold.close, () => { return '关闭' });
+            UI.addTooltips(bar.fold.start, () => { return '开启' });
+            UI.addTooltips(bar.fold.restart, () => { return '重启' });
+            UI.tooltips.hide();
+            bar.fold.layout.root.onmouseleave = () => {
+                bar.fold.layout.root.style.opacity = 0;
+                bar.fold.layout.root.style.pointerEvents = 'none';
+                UI.addTooltips(bar.layout.root, () => { return tooltip.root });
+            };
+            setTimeout(() => { UI.tooltips.hide() }, 500);
+        };
+        bar.layout.root.classList.toggle('con');
+        bar.fold.layout.add(bar.fold.restart, bar.fold.close, bar.fold.start, bar.fold.state);
+        bar.layout.add(bar.name, bar.pid, bar.cpu, bar.mem, bar.fold.layout.root);
+        const tooltip = Widget.layout(1);
+        const cpucanv = Widget.createElement('canvas', null, null, { 'margin-bottom': '5px' }, { width: 250, height: 50 });
+        const memcanv = Widget.createElement('canvas', null, null, null, { width: 250, height: 50 });
+        tooltip.add(cpucanv, memcanv)
+        const opt = {
+            minValue: 0,
+            yRangeFunction(data) {
+                data.min -= 0.5;
+                data.max += 0.5;
+                return data;
+            },
+            yMinFormatter(min, prc) { return '0' },
+            yMaxFormatter(max, prc) { return parseFloat(max - 0.5).toFixed(prc) },
+            millisPerPixel: 30,
+            grid: {
+                fillStyle: 'transparent',
+                strokeStyle: 'transparent',
+                borderVisible: false
+            },
+            labels: {
+                fillStyle: 'rgba(255, 255, 255, 0.8)',
+                fontSize: 12,
+                precision: 2,
+            },
+        };
+        const topt = {
+            fillStyle: 'rgba(255, 255, 255, 0.8)',
+            fontSize: 12,
+            fontFamily: 'monospace',
+            verticalAlign: 'bottom'
+        };
+        const cpuchart = new SmoothieChart({ title: { text: 'CPU (%)', ...topt }, ...opt });
+        const memchart = new SmoothieChart({ title: { text: 'RAM (MB)', ...topt }, ...opt });
         const cpuline = new TimeSeries();
         const memline = new TimeSeries();
-        cpuchart.addTimeSeries(cpuline, { strokeStyle: 'rgb(0, 137, 228)', lineWidth: 2 });
-        memchart.addTimeSeries(memline, { strokeStyle: 'rgb(255, 217, 0)', lineWidth: 2 });
-        cpuchart.streamTo(cpucanv, 3000);
-        memchart.streamTo(memcanv, 3000);
-        UI.addTooltips(bar.root, () => { return tooltip.root; });
+        cpuchart.addTimeSeries(cpuline, { strokeStyle: 'rgb(0, 137, 228)', lineWidth: 1, fillStyle: 'rgba(0, 137, 228, 0.1)' });
+        memchart.addTimeSeries(memline, { strokeStyle: 'rgb(255, 217, 0)', lineWidth: 1, fillStyle: 'rgba(255, 217, 0, 0.1)' });
+        cpuchart.streamTo(cpucanv, 1000);
+        memchart.streamTo(memcanv, 1000);
+        UI.addTooltips(bar.layout.root, () => { return tooltip.root });
         return bar;
     }
-
-    const page = UI.createTabFrame('page-1', document.createElement('a'), '总览');
+    const icon = Widget.createElement('div', 'con', null, { 'color': 'rgb(175, 175, 175)', 'line-height': '36px', 'font-family': 'icon', 'font-size': '24px', 'text-align': 'center' });
+    icon.innerText = '\uF3F4';
+    const page = UI.createTabFrame('page-1', icon, '总览');
     const layout = Widget.layout();
     layout.refresh = () => { const n = layout.child.length; for (let e of layout.child) { e.style.width = `calc(100% / ${n})` } };
     const col1 = Widget.layout(1);
@@ -278,18 +340,27 @@ const monitor = new Monitor();
     API.processList().then((data) => {
         const bars = new Map();
         const main = processMiniBar();
-        c2.body.appendChild(main.root);
+        const layout = Widget.layout(1, 'process-list');
+        layout.root.classList.toggle('con');
+        main.layout.root.onclick = undefined;
+        c2.body.appendChild(layout.root);
+        layout.add(main.layout.root);
         main.update(data.main.name, data.main.alive, data.main.pid, data.main.cpu, data.main.mem);
         for (let worker of data.workers) {
             const bar = processMiniBar();
-            c2.body.appendChild(bar.root);
+            layout.add(bar.layout.root);
             bars[worker.name] = bar;
             bar.update(worker.name, worker.alive, worker.pid, worker.cpu, worker.mem)
         }
         monitor.addHandler((d) => {
             main.update(d.main.name, d.main.alive, d.main.pid, d.main.cpu, d.main.mem);
             for (let worker of d.workers) {
-                bars[worker.name].update(worker.name, worker.alive, worker.pid, worker.cpu, worker.mem);
+                if (worker.alive) {
+                    bars[worker.name].update(worker.name, worker.alive, worker.pid, worker.cpu, worker.mem);
+                }
+                else {
+                    bars[worker.name].update(worker.name, 0, '--', 0, 0);
+                }
             }
         })
     });

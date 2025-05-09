@@ -1,11 +1,11 @@
 import asyncio
 import signal
-import time
 
 from contextlib import asynccontextmanager
 from multiprocessing import current_process
 from multiprocessing.connection import Pipe
-from typing import Any
+from threading import Event, Thread
+from typing import Any, Optional
 
 import uvicorn
 
@@ -23,6 +23,7 @@ from chara.log import logger, set_logger_config
 
 
 _RESTARTING_PROCESS: list[str] = list()
+
 
 class _Worker:
     
@@ -49,22 +50,31 @@ class _Worker:
         self.process.start()
         self.util = ProcessUtil(self.process.pid)
 
-    async def close(self) -> None:
+    def _close(self, event: Event, timeout: Optional[float] = None) -> None:
+        self.process.join(timeout)
+        event.set()
+
+    async def close(self, timeout: Optional[float] = None) -> None:
+        token = f'{self.process.name}-{self.process.pid}'
+        _RESTARTING_PROCESS.append(token)
+        event = Event()
+        thread = Thread(target=self._close, args=(event, timeout))
         if WINDOWS_PLATFORM:
             self.util.send_signal(signal.CTRL_C_EVENT)
         else:
             self.util.send_signal(signal.SIGINT)
-        self.process.join()
-
-    async def restart(self) -> None:
-        token = f'{self.process.name}-{time.time()}'
-        _RESTARTING_PROCESS.append(token)
-        await self.close()
+        thread.start()
+        while not event.is_set():
+            await asyncio.sleep(0.2)
+        thread.join()
+        _RESTARTING_PROCESS.remove(token)
+    
+    async def restart(self, timeout: Optional[float] = None) -> None:
+        await self.close(timeout)
         process = self.process.new()
         del self.process
         self.process = process
         await self.start()
-        _RESTARTING_PROCESS.remove(token)
 
 
 class MainProcess:
@@ -127,7 +137,7 @@ class MainProcess:
     @property
     def process_data(self) -> dict[str, Any]:
         return {
-            'main': {'name': self.process.name, 'pid': self.process.pid, 'cpu': self.process_util.cpu_percent(), 'mem': round(self.process_util.memory_info().vms / 1024 /1024, 2)},
+            'main': {'name': self.process.name, 'alive': True, 'pid': self.process.pid, 'cpu': self.process_util.cpu_percent(), 'mem': round(self.process_util.memory_info().vms / 1024 /1024, 2)},
             'workers': [{'name': worker.process.name, 'alive': worker.is_alive} | worker.status if worker.is_alive else None for worker in self.workers.values()],
         }
     

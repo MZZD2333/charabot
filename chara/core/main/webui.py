@@ -130,6 +130,16 @@ class WebUI:
         async def _():
             return JSONResponse(self.main.process_data)
 
+        @self.api.post('/process/{name}/reload')
+        async def _(name: str):
+            if worker := self.main.workers.get(name, None):
+                if worker.is_alive:
+                    LOOP = CONTEXT_LOOP.get()
+                    LOOP.create_task(worker.restart(5))
+                    return Response(status_code=200)
+                return Response(f'进程{name}正在重启, 请勿重复调用.', status_code=400)
+            return Response(f'进程{name}不存在.', status_code=400)
+
         @self.api.websocket('/process/monitor')
         async def _(websocket: WebSocket):
             await websocket.accept()
@@ -162,16 +172,6 @@ class WebUI:
                 for name, group in PLUGIN_GROUPS.items()
             ]
             return JSONResponse(data)
-
-        @self.api.post('/plugin/group/{name}/reload')
-        async def _(name: str):
-            if name in PLUGIN_GROUPS:
-                if (process := self.main.workers[name]).is_alive:
-                    LOOP = CONTEXT_LOOP.get()
-                    LOOP.create_task(process.restart())
-                    return Response(status_code=200)
-                return Response(f'插件组{name}正在重启, 请勿重复调用.', status_code=400)
-            return Response(f'插件组{name}不存在.', status_code=400)
 
         @self.api.post('/bot/list')
         async def _():

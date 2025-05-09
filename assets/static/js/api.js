@@ -26,6 +26,9 @@ const API = {
     processList() {
         return this.request('post', '/api/process/list');
     },
+    processReload(name) {
+        return this.request('post', `/api/process/${name}/reload`);
+    },
     pluginList() {
         return this.request('post', '/api/plugin/list');
     },
@@ -34,9 +37,6 @@ const API = {
     },
     pluginGroupList() {
         return this.request('post', '/api/plugin/group/list');
-    },
-    pluginGroupReload(name) {
-        return this.request('post', `/api/plugin/group/${name}/reload`);
     },
     botList() {
         return this.request('post', `/api/bot/list`);
