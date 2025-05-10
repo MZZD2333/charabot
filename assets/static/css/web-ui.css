@@ -14,8 +14,17 @@ body * {
     display: block;
 }
 
+.fbd-dps {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    -ms-user-drag: none;
+}
+
 #root {
     background-color: rgb(245, 245, 245);
+    user-select: none;
 }
 
 #side-menu {
@@ -148,45 +157,46 @@ body * {
 
 /* ---PAGE[1]--- */
 
-#page-1 .card {
-    overflow: hidden;
-}
-
-.process-list {
+#page-1 .list {
     width: calc(100% - 10px);
     height: calc(100% - 20px);
     margin: 10px 5px;
 }
 
-.process {
+#page-1 .list>.mini-bar {
     height: 36px;
     margin-bottom: 5px;
-    background-color: rgba(183, 236, 255, 0.3);
     box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.1);
 }
 
-.process::before {
-    content: '';
-    min-width: 3px;
-    height: 100%;
-}
-
-.process[alive='0']::before {
-    background-color: rgb(123, 124, 125);
-}
-
-.process[alive='1']::before {
-    background-color: rgb(15, 197, 85);
-}
-
-.process-list>.process:last-child {
+#page-1 .list>.mini-bar:last-child {
     margin-bottom: 0;
 }
 
-.process>.name,
-.process>.pid,
-.process>.cpu,
-.process>.mem {
+#page-1 .process {
+    background-color: rgb(123, 124, 125, 0.1);
+    transition: background-color 1s;
+}
+
+#page-1 .process[alive='1'] {
+    background-color: rgb(15, 197, 85, 0.1);
+}
+
+#page-1 .process::before {
+    content: '';
+    min-width: 3px;
+    height: 100%;
+    background-color: rgb(123, 124, 125, 0.8);
+}
+
+#page-1 .process[alive='1']::before {
+    background-color: rgb(15, 197, 85, 0.8);
+}
+
+#page-1 .process>.name,
+#page-1 .process>.pid,
+#page-1 .process>.cpu,
+#page-1 .process>.mem {
     margin-left: 5px;
     font-size: 16px;
     line-height: 36px;
@@ -197,61 +207,61 @@ body * {
     user-select: none;
 }
 
-.process>.name {
+#page-1 .process>.name {
     width: 100%;
     min-width: 60px;
     margin-left: 10px;
 }
 
-.process>.pid {
+#page-1 .process>.pid {
     min-width: 60px;
 }
 
-.process>.cpu {
+#page-1 .process>.cpu {
     min-width: 70px;
     line-height: 36px;
 }
 
-.process>.cpu::before {
+#page-1 .process>.cpu::before {
     content: '\F2D6';
     margin-right: 5px;
     font-family: icon;
     font-size: 14px;
 }
 
-.process>.cpu::after {
+#page-1 .process>.cpu::after {
     content: '%';
     position: absolute;
     right: 5px;
 }
 
-.process>.mem {
+#page-1 .process>.mem {
     min-width: 120px;
 }
 
-.process>.mem::before {
+#page-1 .process>.mem::before {
     content: '\F6E3';
     margin-right: 5px;
     font-family: icon;
     font-size: 14px;
 }
 
-.process>.mem::after {
+#page-1 .process>.mem::after {
     content: 'MB';
     position: absolute;
     right: 5px;
 }
 
-.process>.fold {
+#page-1 .process>.fold {
     position: absolute;
     flex-flow: row-reverse;
     background-color: rgb(245, 245, 245);
     transition: opacity 0.4s;
 }
 
-.process>.fold>.close,
-.process>.fold>.start,
-.process>.fold>.restart {
+#page-1 .process>.fold>.close,
+#page-1 .process>.fold>.start,
+#page-1 .process>.fold>.restart {
     min-width: 48px;
     color: rgb(63, 63, 63);
     font-family: icon;
@@ -260,36 +270,118 @@ body * {
     text-align: center;
     transition: background-color 0.3s;
 }
-.process>.fold>.close::before {
+
+#page-1 .process>.fold>.close::before {
     content: '\F593';
 }
 
-.process>.fold>.start::before {
+#page-1 .process>.fold>.start::before {
     content: '\F4F5';
 }
 
-.process>.fold>.restart::before {
+#page-1 .process>.fold>.restart::before {
     content: '\F130';
 }
 
-.process>.fold>.close:hover {
+#page-1 .process>.fold>.close:hover {
     background-color: rgba(232, 69, 69, 0.8);
 }
 
-.process>.fold>.start:hover {
+#page-1 .process>.fold>.start:hover {
     background-color: rgba(15, 197, 85, 0.8);
 }
 
-.process>.fold>.restart:hover {
+#page-1 .process>.fold>.restart:hover {
     background-color: rgba(0, 217, 255, 0.8);
 }
 
-.process>.fold>.state {
+#page-1 .process[busy='1']>.fold>.close:hover,
+#page-1 .process[busy='1']>.fold>.start:hover,
+#page-1 .process[busy='1']>.fold>.restart:hover {
+    background-color: rgba(123, 124, 125, 0.8);
+}
+
+#page-1 .process>.fold>.state {
     width: 100%;
     margin-left: 10px;
     text-align: left;
     color: rgb(63, 63, 63);
     font-size: 16px;
     line-height: 36px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
+
+#page-1 .plugin {
+    background-color: rgb(123, 124, 125, 0.1);
+    transition: background-color 1s;
+}
+
+#page-1 .plugin[state='1'] {
+    background-color: rgb(15, 197, 85, 0.1);
+}
+
+#page-1 .plugin[state='2'] {
+    background-color: rgb(255, 154, 0, 0.1);
+}
+
+#page-1 .plugin[state='3'] {
+    background-color: rgb(232, 69, 69, 0.1);
+}
+
+#page-1 .plugin::before {
+    content: '';
+    min-width: 3px;
+    height: 100%;
+    background-color: rgb(123, 124, 125, 0.8);
+}
+
+#page-1 .plugin[state='1']::before {
+    background-color: rgb(15, 197, 85, 0.8);
+}
+
+#page-1 .plugin[state='2']::before {
+    background-color: rgb(255, 154, 0, 0.8);
+}
+
+#page-1 .plugin[state='3']::before {
+    background-color: rgb(232, 69, 69, 0.8);
+}
+
+#page-1 .plugin>.icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 100%;
+}
+
+#page-1 .plugin>.name {
+    width: 100%;
+    height: 100%;
+    min-width: 60px;
+    margin-left: 10px;
+    font-size: 16px;
+    line-height: 36px;
+    color: rgb(63, 63, 63);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    user-select: none;
+}
+
 /* ---PAGE[1]--- */
+
+/* ---PAGE[2]--- */
+#page-2 {
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+    margin: 10px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+}
+
+#page-2 .card {
+    margin: 0;
+    box-shadow: none;
+}
+
+/* ---PAGE[2]--- */

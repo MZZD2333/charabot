@@ -13,6 +13,7 @@ if (uuid === null) {
 else {
     API.pluginData(uuid).then(
         (result) => {
+            const data = result.data;
             const root = document.getElementById('root');
             let head = document.createElement('div');
             let icon = document.createElement('img');
@@ -34,12 +35,12 @@ else {
             name.className = 'name';
             docs.className = 'docs';
             icon.alt = '';
-            icon.src = `/static/plugin/${uuid}/${result.icon}`;
+            icon.src = `/static/plugin/${uuid}/${data.icon}`;
             icon.onerror = () => {
                 icon.src = '/static/img/plugin-default.webp'
             };
-            name.innerText = result['name'];
-            head.setAttribute('stat', result['state'])
+            name.innerText = data.name;
+            head.setAttribute('stat', data.state)
             l.href = '/static/css/markdown.css';
             l.rel = 'stylesheet';
             c.style.position = 'relative';
@@ -53,9 +54,9 @@ else {
             head.appendChild(chara);
             root.appendChild(head);
             root.appendChild(docs);
-            if (result['docs']) {
+            if (data.docs) {
                 const xhr = new XMLHttpRequest();
-                xhr.open('GET', `/static/plugin/${uuid}/${result.docs}`);
+                xhr.open('GET', `/static/plugin/${uuid}/${data.docs}`);
                 xhr.onload = () => {
                     if (xhr.status === 200) {
                         c.innerHTML = marked.parse(xhr.response);
@@ -64,9 +65,6 @@ else {
                 xhr.onerror = () => reject(new Error('Network error'));
                 xhr.send();
             }
-
-
         }
     )
-
 }

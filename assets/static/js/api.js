@@ -8,10 +8,12 @@ const API = {
                 const xhr = new XMLHttpRequest();
                 xhr.open(method, url);
                 xhr.onload = () => {
-                    if (xhr.status === 200) {
-                        resolve(JSON.parse(xhr.response));
-                    } else {
-                        reject(xhr.response);
+                    const data = xhr.response ? JSON.parse(xhr.response) : null;
+                    if (200 <= xhr.status < 300) {
+                        resolve(data)
+                    }
+                    else {
+                        reject(data);
                     }
                 };
                 xhr.onerror = () => reject(new Error('Network error'));
@@ -19,15 +21,21 @@ const API = {
             }
         );
     },
-    monitor(){
-        var ws = new WebSocket(`ws://${window.location.host}/api/process/monitor`);
+    monitor() {
+        var ws = new WebSocket(`ws://${window.location.host}/api/monitor`);
         return ws;
     },
     processList() {
         return this.request('post', '/api/process/list');
     },
-    processReload(name) {
-        return this.request('post', `/api/process/${name}/reload`);
+    processClose(name) {
+        return this.request('post', `/api/process/${name}/close`);
+    },
+    processStart(name) {
+        return this.request('post', `/api/process/${name}/start`);
+    },
+    processRestart(name) {
+        return this.request('post', `/api/process/${name}/restart`);
     },
     pluginList() {
         return this.request('post', '/api/plugin/list');
@@ -43,4 +51,4 @@ const API = {
     },
 };
 
-export {API}
+export { API }

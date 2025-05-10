@@ -14,7 +14,7 @@ from starlette.staticfiles import NotModifiedResponse
 from starlette.types import Receive, Scope, Send
 
 from chara.config import GlobalConfig, WebUIConfig
-from chara.core.param import BOTS, CONTEXT_LOOP, PLUGINS, PLUGIN_GROUPS
+from chara.core.param import BOTS, PLUGINS, PLUGIN_GROUPS
 from chara.log import logger
 
 if TYPE_CHECKING:
@@ -114,6 +114,9 @@ class WebUI:
         main.app.include_router(self.api)
         main.app.include_router(self.web)
     
+    def _response(self, code: int, msg: Optional[str] = None, data: Any = None) -> JSONResponse:
+        return JSONResponse(dict(code=code, msg=msg, data=data), code)
+    
     def _set_apiroute(self):
         @self.web.get('')
         @self.web.get('/')
@@ -126,41 +129,70 @@ class WebUI:
                 logger.warning(f'web-ui入口文件({index})不存在')
             return HTMLResponse(content)
         
-        @self.api.post('/process/list')
-        async def _():
-            return JSONResponse(self.main.process_data)
-
-        @self.api.post('/process/{name}/reload')
-        async def _(name: str):
-            if worker := self.main.workers.get(name, None):
-                if worker.is_alive:
-                    LOOP = CONTEXT_LOOP.get()
-                    LOOP.create_task(worker.restart(5))
-                    return Response(status_code=200)
-                return Response(f'进程{name}正在重启, 请勿重复调用.', status_code=400)
-            return Response(f'进程{name}不存在.', status_code=400)
-
-        @self.api.websocket('/process/monitor')
+        @self.api.websocket('/monitor')
         async def _(websocket: WebSocket):
             await websocket.accept()
             try:
+                ticks = 0
                 while True:
-                    await websocket.send_json(self.main.process_data)
+                    await websocket.send_json({'type': 'process', 'data': self.main.process_data})
+                    
+                    if ticks % 5 == 0:
+                        await websocket.send_json({'type': 'plugin', 'data': [{'uuid': plugin.metadata.uuid, 'state': plugin.state.value} for plugin in PLUGINS.values()]})
+                    
                     await asyncio.sleep(1)
+
+                    if ticks == 100:
+                        ticks = 0
+                    
+                    ticks += 1
             
             except WebSocketDisconnect:
                 pass
 
-        @self.api.post('/plugin/list')
+        @self.api.post('/process/list')
         async def _():
+            return JSONResponse(self.main.process_data)
+
+        @self.api.post('/process/{name}/close')
+        async def _(name: str):
+            if worker := self.main.workers.get(name, None):
+                if worker.is_alive:
+                    await worker.close()
+                    self.main.dispatcher.update_pipes()
+                    return self._response(200)
+                return self._response(200, f'进程{name}已关闭, 请勿重复调用.')
+            return self._response(400, f'进程{name}不存在.')
+
+        @self.api.post('/process/{name}/start')
+        async def _(name: str):
+            if worker := self.main.workers.get(name, None):
+                if not worker.is_alive:
+                    await worker.start()
+                    self.main.dispatcher.update_pipes()
+                    return self._response(200)
+                return self._response(200, f'进程{name}已启动, 请勿重复调用.')
+            return self._response(400, f'进程{name}不存在.')
+
+        @self.api.post('/process/{name}/restart')
+        async def _(name: str):
+            if worker := self.main.workers.get(name, None):
+                if worker.is_alive:
+                    await worker.restart()
+                    return self._response(200)
+                return self._response(200, f'进程{name}正在重启, 请勿重复调用.')
+            return self._response(400, f'进程{name}不存在.')
+
+        @self.api.post('/plugin/list')
+        async def _() -> JSONResponse:
             data: list[dict[str, Any]] = [plugin.data for plugin in PLUGINS.values()]
-            return JSONResponse(data)
+            return self._response(200, None, data)
 
         @self.api.post('/plugin/{uuid}/data')
         async def _(uuid: str):
             if plugin := PLUGINS.get(uuid, None):
-                return JSONResponse(plugin.data)
-            return Response(f'插件{uuid}不存在.', status_code=400)
+                return self._response(200, None, plugin.data)
+            return self._response(400, f'插件{uuid}不存在.')
 
         @self.api.post('/plugin/group/list')
         async def _():
@@ -171,7 +203,7 @@ class WebUI:
                 }
                 for name, group in PLUGIN_GROUPS.items()
             ]
-            return JSONResponse(data)
+            return self._response(200, None, data)
 
         @self.api.post('/bot/list')
         async def _():
@@ -191,5 +223,6 @@ class WebUI:
                 }
                 for uin, bot in BOTS.items()
             ]
-            return JSONResponse(data)
+            return self._response(200, None, data)
+
 

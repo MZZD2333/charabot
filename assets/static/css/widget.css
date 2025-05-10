@@ -1,11 +1,3 @@
-.fbd-dps {
-    pointer-events: none;
-    user-select: none;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
-    -ms-user-drag: none;
-}
-
 .con {
     position: relative;
     width: 100%;
@@ -33,6 +25,7 @@
     margin: 10px;
     background: rgb(255, 255, 255);
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
 }
 
 .card>.head {
@@ -50,7 +43,7 @@
     transition: background-color 0.15s;
 }
 
-.card:hover>.head>.state{
+.card:hover>.head>.state {
     background-color: rgba(32, 200, 252, 0.6);
 }
 
@@ -70,6 +63,11 @@
     color: rgba(100, 100, 100, 1);
 }
 
-.card>.body{
+.card>.body {
     height: calc(100% - 40px);
+    overflow-y: auto;
+}
+
+.card>.body::-webkit-scrollbar {
+    display: none;
 }

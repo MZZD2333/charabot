@@ -9,7 +9,6 @@ body {
     overflow: scroll;
 }
 
-
 body::-webkit-scrollbar {
     display: none;
 }
@@ -151,9 +150,8 @@ body::-webkit-scrollbar {
 }
 
 .group-container .plugin[stat='3'] {
-    box-shadow: -10px 0 0 rgb(232, 69, 69, );
+    box-shadow: -10px 0 0 rgb(232, 69, 69);
 }
-
 
 .group-container .plugin .icon {
     position: relative;

@@ -10,12 +10,13 @@ function _useCSS(...url) {
         l.rel = 'stylesheet';
         document.head.appendChild(l);
     }
-}
+};
+
 function _clearCSS() {
     document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
         link.parentNode.removeChild(link);
     });
-}
+};
 
 _clearCSS();
 
@@ -35,4 +36,4 @@ switch (_url.searchParams.get('mode')) {
             _useCSS('/static/css/web-ui.css', '/static/css/widget.css');
         });
         break
-}
+};

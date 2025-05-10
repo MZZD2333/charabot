@@ -11,7 +11,7 @@ from fastapi.websockets import WebSocket, WebSocketDisconnect
 from chara.config import GlobalConfig
 from chara.core.event import CoreEvent, PluginStatusUpdateEvent, BotConnectedEvent, BotDisConnectedEvent
 from chara.core.param import BOTS, CONTEXT_LOOP, PLUGINS, PLUGIN_GROUPS
-from chara.core.workers import PluginGroupProcess, WorkerProcess
+from chara.core.workers import PluginGroupProcess
 from chara.lib.tree import Node
 from chara.log import style, logger
 from chara.onebot.events import Event, GroupMessageEvent, MessageEvent, MetaEvent, NoticeEvent, RequestEvent
@@ -23,17 +23,19 @@ if TYPE_CHECKING:
 
 class Dispatcher:
 
-    __slots__ = ('config', 'pipes', 'router')
+    __slots__ = ('main', 'config', 'pipes', 'router')
     
+    main: 'MainProcess'
     config: GlobalConfig
     pipes: list[tuple[Connection, Connection]]
     router: APIRouter
 
     def __init__(self, main: 'MainProcess', config: GlobalConfig) -> None:
+        self.main = main
         self.config = config
         self.router = APIRouter()
         self.router.websocket_route(self.config.server.websocket.path)(self._handle_websocket)
-        main.app.include_router(self.router)
+        self.main.app.include_router(self.router)
 
         
     async def _handle_websocket(self, websocket: WebSocket) -> None:
@@ -81,31 +83,41 @@ class Dispatcher:
     
     async def event_loop(self):
         LOOP = CONTEXT_LOOP.get()
+        self.update_pipes()
         ticks = 0
+        pipes = [pipe_recv for pipe_recv, _ in self.pipes]
+        count = len(pipes)
         while True:
-            ticks += 1
-            for pipe_recv, _ in self.pipes:
-                if pipe_recv.poll():
-                    event: CoreEvent = pipe_recv.recv()
-                    if isinstance(event, PluginStatusUpdateEvent):
-                        group = PLUGIN_GROUPS[event.group_name]
-                        status = event.status
-                        for uuid in status:
-                            group[uuid].state = status[uuid]
-                            PLUGINS[uuid].state = status[uuid]
+            if len(self.pipes) != count:
+                pipes = [pipe_recv for pipe_recv, _ in self.pipes]
+                count = len(pipes)
             
-            await asyncio.sleep(1)
+            if count > 0 and (pipe := pipes[ticks % count]).poll():
+                event: CoreEvent = pipe.recv()
+                if isinstance(event, PluginStatusUpdateEvent):
+                    group = PLUGIN_GROUPS[event.group_name]
+                    status = event.status
+                    for uuid in status:
+                        group[uuid].state = status[uuid]
+                        PLUGINS[uuid].state = status[uuid]
             
-            if ticks % 100 == 0:
-                ticks = 0
+            await asyncio.sleep(0.1)
+            
+            if ticks % 30 == 0:
                 for bot in BOTS.values():
                     if bot.connected and not bot.is_latest_data_file():
                         LOOP.create_task(bot.update_bot_data())
+            
+            if ticks == 300:
+                ticks = 0
+            
+            ticks += 1
     
-    def update_pipes(self, processes: list[WorkerProcess]) -> None:
+    def update_pipes(self) -> None:
         pipes: list[tuple[Connection, Connection]] = list()
-        for process in processes:
-            if isinstance(process, PluginGroupProcess) and process.is_alive():
+        for worker in self.main.workers.values():
+            process = worker.process
+            if isinstance(process, PluginGroupProcess) and worker.is_alive:
                 pipes.append((process.pipe_p_recv, process.pipe_p_send))
         self.pipes = pipes
 

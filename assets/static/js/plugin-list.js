@@ -4,6 +4,7 @@
 import { API } from './api.js';
 
 API.pluginGroupList().then((result) => {
+    const data = result.data;
     const root = document.getElementById('root');
     function createGroup(name, plugins) {
         let group = document.createElement('div');
@@ -20,7 +21,7 @@ API.pluginGroupList().then((result) => {
         group.appendChild(container);
         return group;
     }
-    function createPlugin(data) {
+    function createPlugin(d) {
         let plugin = document.createElement('div');
         let icon = document.createElement('img');
         let info = document.createElement('div');
@@ -36,15 +37,15 @@ API.pluginGroupList().then((result) => {
         version.className = 'version';
         authors.className = 'authors';
         icon.alt = '';
-        icon.src = `/static/plugin/${data.uuid}/${data.icon}`;
+        icon.src = `/static/plugin/${d.uuid}/${d.icon}`;
         icon.onerror = () => {
             icon.src = '/static/img/plugin-default.webp';
         };
-        name.innerHTML = `${data.index}. ${data.name}`;
-        desc.innerHTML = data.description;
-        version.innerHTML = `version: ${data.version}`;
-        authors.innerHTML = `authors: ${data.authors}`;
-        plugin.setAttribute('stat', data.state);
+        name.innerHTML = `${d.index}. ${d.name}`;
+        desc.innerHTML = d.description;
+        version.innerHTML = `version: ${d.version}`;
+        authors.innerHTML = `authors: ${d.authors}`;
+        plugin.setAttribute('stat', d.state);
         info.appendChild(name);
         info.appendChild(version);
         info.appendChild(desc);
@@ -74,7 +75,7 @@ API.pluginGroupList().then((result) => {
     head.appendChild(logo);
     head.appendChild(title);
     head.appendChild(chara);
-    for (let d of result) {
+    for (let d of data) {
         list.appendChild(createGroup(d.name, d.plugins));
     }
     root.appendChild(head);

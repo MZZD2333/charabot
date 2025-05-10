@@ -41,13 +41,22 @@ class _Worker:
 
     @property
     def status(self) -> dict[str, Any]:
-        pid = self.util.pid
-        cpu = self.util.cpu_percent()
-        mem = round(self.util.memory_info().vms / 1024 /1024, 2)
-        return {'pid': pid, 'cpu': cpu, 'mem': mem}
+        if self.is_alive:
+            pid = self.util.pid
+            cpu = self.util.cpu_percent()
+            mem = round(self.util.memory_info().vms / 1024 /1024, 2)
+        else:
+            pid = cpu = mem = None
+        return {'name': self.process.name, 'alive': self.is_alive, 'pid': pid, 'cpu': cpu, 'mem': mem}
 
     async def start(self) -> None:
-        self.process.start()
+        try:
+            self.process.start()
+        except:
+            process = self.process.new()
+            del self.process
+            self.process = process
+            self.process.start()
         self.util = ProcessUtil(self.process.pid)
 
     def _close(self, event: Event, timeout: Optional[float] = None) -> None:
@@ -71,9 +80,6 @@ class _Worker:
     
     async def restart(self, timeout: Optional[float] = None) -> None:
         await self.close(timeout)
-        process = self.process.new()
-        del self.process
-        self.process = process
         await self.start()
 
 
@@ -138,7 +144,7 @@ class MainProcess:
     def process_data(self) -> dict[str, Any]:
         return {
             'main': {'name': self.process.name, 'alive': True, 'pid': self.process.pid, 'cpu': self.process_util.cpu_percent(), 'mem': round(self.process_util.memory_info().vms / 1024 /1024, 2)},
-            'workers': [{'name': worker.process.name, 'alive': worker.is_alive} | worker.status if worker.is_alive else None for worker in self.workers.values()],
+            'workers': [worker.status for worker in self.workers.values()],
         }
     
     async def _on_startup(self) -> None:
@@ -148,7 +154,7 @@ class MainProcess:
             if not worker.is_alive:
                 await worker.start()
 
-        self.dispatcher.update_pipes([cp.process for cp in self.workers.values()])
+        self.dispatcher.update_pipes()
         LOOP.create_task(self.dispatcher.event_loop())
         if self.config.server.webui.enable:
             logger.success(f'Web-UI 已在[http://{self.config.server.host}:{self.config.server.port}{self.web_ui.config.path}]开启.')
@@ -166,7 +172,7 @@ class MainProcess:
             logger.warning(f'{name} 名称已存在.')
             return
         self.workers[name] = _Worker(process)
-        self.dispatcher.update_pipes([cp.process for cp in self.workers.values()])
+        self.dispatcher.update_pipes()
 
     def run(self) -> None:
         logger.success(f'主进程启动 [PID: {self.process.pid}].')

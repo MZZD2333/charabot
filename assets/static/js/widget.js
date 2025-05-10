@@ -40,7 +40,7 @@ const Widget = {
             refresh() { }
         }
         if (cls !== null) {
-            layout.root.classList.add(cls);
+            layout.root.classList.add(...cls.split(' '));
         }
         return layout;
     },
@@ -52,7 +52,7 @@ const Widget = {
                 root: Widget.createElement(),
                 layout: Widget.layout(0, 'head'),
                 state: Widget.createElement('div', 'state'),
-                title: Widget.createElement('div', 'title fbd-dps'),
+                title: Widget.createElement('div', 'title'),
             },
             body: Widget.createElement('div', 'body'),
         }
@@ -65,7 +65,7 @@ const Widget = {
             }
         }
         if (cls !== null) {
-            layout.root.classList.add(cls);
+            layout.root.classList.add(...cls.split(' '));
         }
         card.root = card.layout.root;
         card.head.root = card.head.layout.root;
