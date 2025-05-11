@@ -232,13 +232,28 @@ const monitor = new Monitor();
                 bar.icon.src = `/static/plugin/${data.uuid}/${data.icon}`;
                 bar.icon.onerror = () => { bar.icon.src = '/static/img/plugin-default.webp' };
                 bar.name.innerText = data.name;
+                r1.innerHTML = v.uuid;
+                r2.innerHTML = v.group;
+                r3.innerHTML = v.authors;
+                r4.innerHTML = v.version;
+                r5.innerHTML = v.description;
             },
             async update(state) {
                 v.state = state;
                 this.layout.root.setAttribute('state', state);
             },
         };
-        const tooltip = Widget.layout(1);
+        const tooltip = Widget.layout(1, null, null, { width: '240px'});
+        const style = Widget.createElement('style');
+        const r1 = Widget.createElement('div', '');
+        const r2 = Widget.createElement('div', '');
+        const r3 = Widget.createElement('div', '');
+        const r4 = Widget.createElement('div', '');
+        const r5 = Widget.createElement('div', '');
+        style.innerHTML = `
+        
+        `;
+        tooltip.add(style, r1, r2, r3, r4, r5);
 
         bar.layout.add(bar.icon, bar.name);
         UI.addTooltips(bar.layout.root, () => { return tooltip.root });

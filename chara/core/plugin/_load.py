@@ -43,7 +43,7 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
                     ep = PLUGINS[metadata.uuid]
                     logger.warning(log_content + '与' + str(ep) + '具有相同的uuid. 跳过导入.')
                 continue
-            plugin.index = len(PLUGINS)
+            plugin.index = len(PLUGINS) + 1
             PLUGINS[metadata.uuid] = plugin
         except:
             logger.exception(f'错误的插件格式, 跳过导入[{path}].')
@@ -63,7 +63,7 @@ def load_plugins(directory: PathLike, group_name: str, in_worker_process: bool =
             if not is_in_env(directory):
                 add_to_env(directory)
             module = importlib.import_module(f'{path.parent.stem}.{path.stem}')
-            if trigger_instances := inspect.getmembers(module, lambda x: type(x) is Trigger):
+            if trigger_instances := inspect.getmembers(module, lambda x: isinstance(x, Trigger)):
                 trigger_instances = cast(Iterable[tuple[str, Trigger]], trigger_instances)
                 for instance_name, trigger in trigger_instances:
                     if trigger.name is None:

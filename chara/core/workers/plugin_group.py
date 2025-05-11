@@ -29,7 +29,6 @@ class PluginGroupProcess(WorkerProcess):
         
         ticks = 0
         while not self.should_exit:
-            ticks += 1
             if self.pipe_c_recv.poll():
                 event: Union[CoreEvent, Event] = self.pipe_c_recv.recv()
                 if isinstance(event, CoreEvent):
@@ -53,13 +52,19 @@ class PluginGroupProcess(WorkerProcess):
             else:
                 await asyncio.sleep(0.1)
             
-            if ticks % 100 == 0:
-                ticks = 0
+            if ticks % 20 == 0:
                 event_bytes = pickle.dumps(PluginStatusUpdateEvent(self.name, {plugin.metadata.uuid: plugin.state for plugin in PLUGINS.values()}))
                 self.pipe_c_send.send_bytes(event_bytes)
+                
+            if ticks % 30 == 0:
                 for bot in BOTS.values():
                     if bot.connected and not bot.is_latest_data_file():
                         LOOP.create_task(bot.update_bot_data())
+            
+            if ticks == 60:
+                ticks = 0
+            
+            ticks += 1
 
     async def startup(self) -> None:
         from chara.core.bot import Bot

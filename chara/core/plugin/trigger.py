@@ -1,12 +1,13 @@
 from contextvars import ContextVar
 from dataclasses import dataclass
 
-from typing import Any, Optional, overload, TYPE_CHECKING
+from typing import Any, Optional, NoReturn, overload, TYPE_CHECKING
 
 from chara.core.bot import Bot
 from chara.core.plugin.condition import Condition
 from chara.core.plugin.handler import Handler
 from chara.core.param import CONTEXT_LOOP
+from chara.exception import KillTrigger
 from chara.log import logger, style
 from chara.lib.executor import Executor
 from chara.onebot.events import Event
@@ -48,6 +49,10 @@ class Trigger:
 
     def __str__(self) -> str:
         return style.lc('Trigger') + f'[{style.g(self.plugin.metadata.name)}.' + style.lm(self.name or hex(id(self))) + ']'
+    
+    def kill(self) -> NoReturn:
+        self.alive = False
+        raise KillTrigger
 
     def handle(self, func: Optional[ExecutorCallable[Any]] = None, condition: Optional[Condition] = None) -> ExecutorCallable[Any]:
         '''
@@ -105,6 +110,9 @@ class Session(Trigger):
     '''
 
     __slots__ = ('alive', 'block', 'condition', 'handlers', 'name', 'plugin', 'priority', 'gid', 'uin')
+
+    @overload
+    def __init__(self, gid: int, uin: int, condition: Optional[Condition] = None) -> None:...
 
     @overload
     def __init__(self, gid: int, uin: Optional[int], condition: Optional[Condition] = None) -> None:...

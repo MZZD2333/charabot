@@ -1,6 +1,11 @@
 
+class IgnoreException(Exception):
+    pass
 
-class HandleFinished(Exception):
+class KillTrigger(IgnoreException):
+    pass
+
+class HandleFinished(IgnoreException):
     pass
 
 

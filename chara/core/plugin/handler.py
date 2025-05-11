@@ -5,7 +5,7 @@ from typing import Any, NoReturn, Optional, TYPE_CHECKING
 
 from chara.core.bot import Bot
 from chara.core.plugin.condition import Condition
-from chara.exception import HandleFinished
+from chara.exception import HandleFinished, IgnoreException
 from chara.log import logger, style
 from chara.lib.executor import Executor
 from chara.onebot.message import Message, MessageSegment
@@ -96,7 +96,7 @@ class Handler:
         try:
             if self.condition and not await self.condition(event, self, self.bot, self.tcd):
                 return
-        except HandleFinished:
+        except IgnoreException:
             return
         except:
             logger.exception(str(self.trigger) + style.r(' 在检查Handler自身条件时捕发生异常.'))
@@ -105,7 +105,7 @@ class Handler:
         try:
             if self.exc.verify_params((event, self, self.bot, self.tcd)):
                 await self.exc(event, self, self.bot, self.tcd)
-        except HandleFinished:
+        except IgnoreException:
             return
         except:
             logger.exception(str(self.trigger) + style.r(' 在Handler处理事件时发生异常.'))
