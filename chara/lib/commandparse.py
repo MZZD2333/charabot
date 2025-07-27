@@ -2,7 +2,7 @@ import re
 import shlex
 
 from dataclasses import dataclass
-from typing import Any, Callable, Type
+from typing import Any, Callable, Optional, Type
 
 
 @dataclass(repr=False, eq=False, frozen=True, slots=True)
@@ -26,7 +26,7 @@ class KeywordArgument:
     usage: str = ''
 
     @property
-    def key(self):
+    def key(self) -> str:
         return self.prefix + self.name
 
 
@@ -87,10 +87,10 @@ class CommandParser:
     def add_postion_argument(self, default: Any = None, as_type: Type[Any] | Callable[[str], Any] = str, usage: str = '') -> None:
         self.posargs.append(PostionArgument(default, as_type, usage))
 
-    def add_sub_parser(self, parser: 'CommandParser'):
+    def add_sub_parser(self, parser: 'CommandParser') -> None:
         self.sub_parsers.append(parser)
         
-    def parse(self, command: str):
+    def parse(self, command: str) -> Optional[ParseResult]:
         command_args = shlex.split(command)
         if command_args:  
             if re.search(self.pattern, command_args[0]):

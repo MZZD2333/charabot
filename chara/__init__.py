@@ -1,8 +1,9 @@
+from typing import Optional, Union
 from chara.config import GlobalConfig, load_config
-from chara.typing import PathLike as _PathLike
+from chara.typing import PathLike
 
 
-def initialize(_config: _PathLike | GlobalConfig | None = None):
+def initialize(config_or_path: Optional[Union[PathLike, GlobalConfig]] = None):
     '''
     ## 初始化
     
@@ -13,34 +14,34 @@ def initialize(_config: _PathLike | GlobalConfig | None = None):
     from multiprocessing import current_process
     
     from chara.config import DEFAULT_GLOBAL_CONFIG
-    from chara.log import set_logger_config, style, logger
-    from chara.core import MainProcess
+    from chara.log import C256, logger
+    from chara.core import Core
 
     current_process().name = 'chara'
 
-    log_msg = style.c('Config')
-    if _config is None:
+    log_msg = C256.f_ef5b9c('Config')
+    if config_or_path is None:
         config = load_config()
         with open('./default-config.yaml', 'w', encoding='UTF-8') as f:
             f.write(DEFAULT_GLOBAL_CONFIG)
-        log_msg += style.ly('[Default]') + style.lc('[./default-config.yaml]')
+        log_msg += C256.f_009ad6('[Default]') + C256.f_00a6ac('[./default-config.yaml]')
         logger.success(log_msg + ' 已生成.')
     
-    elif isinstance(_config, GlobalConfig):
-        config = _config
-        log_msg += style.ly('[Custom]') + style.lc('[memory]')
+    elif isinstance(config_or_path, GlobalConfig):
+        config = config_or_path
+        log_msg += C256.f_fcaf17('[Custom]') + C256.f_6f60aa('[memory]')
     
     else:
-        log_msg += style.ly('[Custom]') + style.lc(f'[{_config}]')
+        log_msg += C256.f_fcaf17('[Custom]') + C256.f_00a6ac(f'[{config_or_path}]')
         try:
-            config = load_config(_config)
+            config = load_config(config_or_path)
         except Exception:
             logger.exception(log_msg + ' 加载失败!')
             exit(0)
     
-    set_logger_config(config.log)
-    logger.success(log_msg  + ' loaded successfully!')
-    main = MainProcess(config)
+    logger.success(log_msg  + ' 加载成功!')
+    logger.set_level(config.log.level)
+    core = Core(config)
     
-    return main
+    return core
 

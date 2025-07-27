@@ -1,8 +1,7 @@
-from enum import Enum
-from functools import partial
-from typing import Any, Coroutine, Optional
+from typing import Any
 
 from chara.onebot.message import Message
+from chara.onebot.api.base import API
 
 
 async def _send_private_msg(*, user_id: int, message: str | Message, auto_escape: bool = ...) -> dict[str, Any]:
@@ -617,55 +616,47 @@ async def _clean_cache() -> None:
     - None
     '''
 
-class API(Enum):
+class OneBotAPI(API):
     '''
     ## OneBot v11 协议API
     '''
-    send_private_msg = _send_private_msg
-    send_group_msg = _send_group_msg
-    send_msg = _send_msg
-    delete_msg = _delete_msg
-    get_msg = _get_msg
-    get_forward_msg = _get_forward_msg
-    send_like = _send_like
-    set_group_kick = _set_group_kick
-    set_group_ban = _set_group_ban
-    set_group_anonymous_ban = _set_group_anonymous_ban
-    set_group_whole_ban = _set_group_whole_ban
-    set_group_admin = _set_group_admin
-    set_group_anonymous = _set_group_anonymous
-    set_group_card = _set_group_card
-    set_group_name = _set_group_name
-    set_group_leave = _set_group_leave
-    set_group_special_title = _set_group_special_title
-    set_friend_add_request = _set_friend_add_request
-    set_group_add_request = _set_group_add_request
-    get_login_info = _get_login_info
-    get_stranger_info = _get_stranger_info
-    get_friend_list = _get_friend_list
-    get_group_info = _get_group_info
-    get_group_list = _get_group_list
-    get_group_member_info = _get_group_member_info
-    get_group_member_list = _get_group_member_list
-    get_group_honor_info = _get_group_honor_info
-    get_cookies = _get_cookies
-    get_csrf_token = _get_csrf_token
-    get_credentials = _get_credentials
-    get_record = _get_record
-    get_image = _get_image
-    can_send_image = _can_send_image
-    can_send_record = _can_send_record
-    get_status = _get_status
-    get_version_info = _get_version_info
-    set_restart = _set_restart
-    clean_cache = _clean_cache
+    send_private_msg        = staticmethod(_send_private_msg)
+    send_group_msg          = staticmethod(_send_group_msg)
+    send_msg                = staticmethod(_send_msg)
+    delete_msg              = staticmethod(_delete_msg)
+    get_msg                 = staticmethod(_get_msg)
+    get_forward_msg         = staticmethod(_get_forward_msg)
+    send_like               = staticmethod(_send_like)
+    set_group_kick          = staticmethod(_set_group_kick)
+    set_group_ban           = staticmethod(_set_group_ban)
+    set_group_anonymous_ban = staticmethod(_set_group_anonymous_ban)
+    set_group_whole_ban     = staticmethod(_set_group_whole_ban)
+    set_group_admin         = staticmethod(_set_group_admin)
+    set_group_anonymous     = staticmethod(_set_group_anonymous)
+    set_group_card          = staticmethod(_set_group_card)
+    set_group_name          = staticmethod(_set_group_name)
+    set_group_leave         = staticmethod(_set_group_leave)
+    set_group_special_title = staticmethod(_set_group_special_title)
+    set_friend_add_request  = staticmethod(_set_friend_add_request)
+    set_group_add_request   = staticmethod(_set_group_add_request)
+    get_login_info          = staticmethod(_get_login_info)
+    get_stranger_info       = staticmethod(_get_stranger_info)
+    get_friend_list         = staticmethod(_get_friend_list)
+    get_group_info          = staticmethod(_get_group_info)
+    get_group_list          = staticmethod(_get_group_list)
+    get_group_member_info   = staticmethod(_get_group_member_info)
+    get_group_member_list   = staticmethod(_get_group_member_list)
+    get_group_honor_info    = staticmethod(_get_group_honor_info)
+    get_cookies             = staticmethod(_get_cookies)
+    get_csrf_token          = staticmethod(_get_csrf_token)
+    get_credentials         = staticmethod(_get_credentials)
+    get_record              = staticmethod(_get_record)
+    get_image               = staticmethod(_get_image)
+    can_send_image          = staticmethod(_can_send_image)
+    can_send_record         = staticmethod(_can_send_record)
+    get_status              = staticmethod(_get_status)
+    get_version_info        = staticmethod(_get_version_info)
+    set_restart             = staticmethod(_set_restart)
+    clean_cache             = staticmethod(_clean_cache)
 
-    def __getattr__(self, name: str) -> partial[Coroutine[Any, Any, Any]]:...
-
-    async def call_api(self, api: str, **data: Any) -> Optional[dict[Any, Any]]:...
-
-
-__all__ = [
-    'API',
-]
 

@@ -22,13 +22,13 @@ class Executor(Generic[R]):
 
     async def __call__(self, *params: Any) -> R:
         if self.__is_awaitable:
-            return await self.__callable(*self.__parse_params(params)) # type: ignore[call-arg]
+            return await self.__callable(*self.__parse_params(params)) # type: ignore
         else:
-            return self.__callable(*self.__parse_params(params)) # type: ignore[call-arg]
+            return self.__callable(*self.__parse_params(params)) # type: ignore
 
     def __get_param_annotations(self, func: ExecutorCallable[R]) -> tuple[Type[Any], ...]:
         params = list(inspect.signature(func).parameters.values())
-        return tuple(param.annotation.__origin__ if isinstance(param.annotation, GenericAlias) else param.annotation for param in params)
+        return tuple(param.annotation.__origin__ if isinstance(param.annotation, GenericAlias) else param.annotation for param in params) # type: ignore
 
     def __parse_params(self, params: tuple[Any, ...]) -> tuple[Any, ...]:
         return tuple(next((param for param in params if isinstance(param, t)), None) for t in self.__param_annotations)

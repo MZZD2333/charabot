@@ -97,25 +97,4 @@ log:
 ```
 
 ## 插件制作
-### 目录(最小)
-```
-plugin_directory
-  ├── __init__.py
-  └── plugin.yaml
-```
-
-### 引入文件 `plugin.yaml`
-```yaml
-name: simple-plugin
-# 确保唯一即可无格式要求
-uuid: 1
-description: this is a simple plugin to xxx.
-authors:
-  - author A
-  - author B
-version: 版本
-# 图标 文件类型(.jpeg, .png, .gif, .webp, ...) [可选]
-icon: icon.png 
-# 说明文档 文件类型(.md) [可选]
-docs: README.md
-```
+祥见 [CharaBot Plugin Example](https://github.com/MZZD2333/charabot_plugin_example)

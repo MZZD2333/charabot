@@ -9,6 +9,7 @@ from playwright._impl._transport import PipeTransport as _OPT
 from playwright.async_api import Browser as _BW
 from playwright.async_api import Playwright as _PW
 
+
 from chara.core.param import CONTEXT_LOOP
 
 class _PT(_OPT):

@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from typing import Any, NoReturn, Optional, TYPE_CHECKING
 
 from chara.core.bot import Bot
+from chara.core.color import colorize
 from chara.core.plugin.condition import Condition
 from chara.exception import HandleFinished, IgnoreException
-from chara.log import logger, style
+from chara.log import logger
 from chara.lib.executor import Executor
+from chara.onebot.api import OneBotAPI
 from chara.onebot.message import Message, MessageSegment
 from chara.typing import MessageLike
 
@@ -49,20 +51,20 @@ class Handler:
         elif user_id:
             params['user_id'] = user_id
         else:
-            logger.warning(f'获取user_id或group_id失败. 当前事件: {event_dict}')
+            logger.warning(f'获取user_id或group_id失败. 当前事件: \n{event_dict}')
             raise HandleFinished
         message = Message(message)
         if at_sender and group_id and user_id:
             message = MessageSegment.at(str(user_id)) + message
         params['message'] = message
         
-        response = await self.bot.send_msg(**params)
+        response = await self.bot[OneBotAPI].send_msg(**params)
         message_id = response['message_id']
         if recall_after > 0:
             async def delete(mid: int):
                 await asyncio.sleep(recall_after)
                 try:
-                    await self.bot.delete_msg(message_id=mid)
+                    await self.bot[OneBotAPI].delete_msg(message_id=mid)
                 except:
                     pass
             self.loop.create_task(delete(message_id), name=message_id)
@@ -87,28 +89,32 @@ class Handler:
         raise HandleFinished
 
     async def __call__(self) -> None:
+        log_text = colorize.handler(self)
         if self._is_running:
-            logger.warning(str(self.trigger) + style.r(' 不可循环调用Handler.'))
+            logger.warning(log_text + '被循环调用.')
             return
+        
         self._is_running = True
         event = self.tcd.event
-        logger.success(str(self.trigger) + ' 将处理这个事件.')
+        logger.info(log_text + '将处理这个事件.')
         try:
             if self.condition and not await self.condition(event, self, self.bot, self.tcd):
                 return
         except IgnoreException:
             return
         except:
-            logger.exception(str(self.trigger) + style.r(' 在检查Handler自身条件时捕发生异常.'))
+            logger.exception(log_text + '在检查自身条件时发生异常.')
             return
         
         try:
-            if self.exc.verify_params((event, self, self.bot, self.tcd)):
-                await self.exc(event, self, self.bot, self.tcd)
+            if not self.exc.verify_params((event, self, self.bot, self.tcd)):
+                logger.warning(log_text + '类型验证未通过.')
+            await self.exc(event, self, self.bot, self.tcd)
+            
         except IgnoreException:
             return
         except:
-            logger.exception(str(self.trigger) + style.r(' 在Handler处理事件时发生异常.'))
+            logger.exception(log_text + '在处理事件时发生异常.')
             return
-        logger.success(str(self.trigger) + ' Handler处理完毕.')
+        logger.success(log_text + '处理完毕.')
 

@@ -5,9 +5,9 @@ if TYPE_CHECKING:
     from chara.onebot.message import Message, MessageSegment
 
 
-PathLike: TypeAlias = Union[str, Path]
-
 T = TypeVar('T')
+
+PathLike: TypeAlias = Union[str, Path]
 
 ExecutorCallable: TypeAlias = Union[Callable[..., T], Callable[..., Awaitable[T]]]
 

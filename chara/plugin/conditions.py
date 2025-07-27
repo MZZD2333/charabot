@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from chara.core import Bot
+from chara.core.bot import Bot
 from chara.core.plugin import Condition, Handler
 from chara.onebot.events import Event, GroupMessageEvent, MessageEvent, PrivateMessageEvent
 from chara.typing import MessageLike
@@ -39,16 +39,16 @@ async def _sender_is_group_owner_or_admin(event: GroupMessageEvent) -> bool:
     return event.sender.role == 'owner' or event.sender.role == 'admin'
 
 async def _bot_is_group_owner(bot: Bot, event: GroupMessageEvent) -> bool:
-    return event.group_id in bot.owner_groups
+    return event.group_id in bot.groups.owned
 
 async def _bot_is_group_admin(bot: Bot, event: GroupMessageEvent) -> bool:
-    return event.group_id in bot.admin_groups
+    return event.group_id in bot.groups.admin
 
 async def _bot_is_group_member(bot: Bot, event: GroupMessageEvent) -> bool:
-    return event.group_id not in bot.owner_groups or event.group_id not in bot.admin_groups
+    return event.group_id not in bot.groups.owned or event.group_id not in bot.groups.admin
 
 async def _bot_is_group_owner_or_admin(bot: Bot, event: GroupMessageEvent) -> bool:
-    return event.group_id in bot.owner_groups or event.group_id in bot.admin_groups
+    return event.group_id in bot.groups.owned or event.group_id in bot.groups.admin
 
 SUPERUSER = Condition(_is_superuser)
 '''## Config中设置的SuperUser'''
@@ -194,7 +194,7 @@ def RandomDelay(max: float = 1, min: float = 0) -> Condition:
     
     from asyncio import Future
     from random import random
-    from chara.core import CONTEXT_LOOP
+    from chara.core.hazard import CONTEXT_LOOP
     
     def _finish(future: Future[None]):
         future.set_result(None)

@@ -110,13 +110,13 @@ class GlobalConfig(_BaseConfig):
     log: LogConfig
 
 
-def _load_default_config() -> GlobalConfig:
+def load_default_config() -> GlobalConfig:
     data = yaml.safe_load(DEFAULT_GLOBAL_CONFIG)
     return GlobalConfig(**data)
 
 def load_config(path: Optional[Union[str, Path]] = None) -> GlobalConfig:
     if path is None:
-        return _load_default_config()
+        return load_default_config()
 
     path = Path(path)
     with open(path, 'rb') as f:
@@ -165,7 +165,7 @@ server:
 plugins:
   # 每个插件组会作为一个单独的子进程运行
   - group_name: core
-    directory: ./plugins/core
+    directory: ./plugins
 
 # 其他模块配置
 module:

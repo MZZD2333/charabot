@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from typing import Any, Optional, NoReturn, overload, TYPE_CHECKING
 
 from chara.core.bot import Bot
+from chara.core.hazard import CONTEXT_LOOP
 from chara.core.plugin.condition import Condition
 from chara.core.plugin.handler import Handler
-from chara.core.param import CONTEXT_LOOP
-from chara.exception import KillTrigger
-from chara.log import logger, style
+from chara.exception import IgnoreException, KillTrigger
+from chara.log import C256, logger
 from chara.lib.executor import Executor
 from chara.onebot.events import Event
 from chara.typing import ExecutorCallable
@@ -47,9 +47,6 @@ class Trigger:
         self.priority = priority
         self.handlers = list()
 
-    def __str__(self) -> str:
-        return style.lc('Trigger') + f'[{style.g(self.plugin.metadata.name)}.' + style.lm(self.name or hex(id(self))) + ']'
-    
     def kill(self) -> NoReturn:
         self.alive = False
         raise KillTrigger
@@ -93,9 +90,14 @@ class Trigger:
                     tcd = TriggerCapturedData(event=event)
             else:
                 return
-        except:
-            logger.exception(str(self) + style.r(' 在检查自身条件时发生异常.'))
+        
+        except IgnoreException:
             return
+        
+        except:
+            logger.exception(str(self) + C256.f_003a6c(' 在检查自身条件时发生异常.'))
+            return
+        
         finally:
             del temp_context_tcd
         
@@ -112,15 +114,15 @@ class Session(Trigger):
     __slots__ = ('alive', 'block', 'condition', 'handlers', 'name', 'plugin', 'priority', 'gid', 'uin')
 
     @overload
-    def __init__(self, gid: int, uin: int, condition: Optional[Condition] = None) -> None:...
+    def __init__(self, *, gid: int, condition: Optional[Condition] = None) -> None:...
 
     @overload
-    def __init__(self, gid: int, uin: Optional[int], condition: Optional[Condition] = None) -> None:...
+    def __init__(self, *, uin: int, condition: Optional[Condition] = None) -> None:...
 
     @overload
-    def __init__(self, gid: Optional[int], uin: int, condition: Optional[Condition] = None) -> None:...
+    def __init__(self, *, gid: int, uin: int, condition: Optional[Condition] = None) -> None:...
 
-    def __init__(self, gid: Optional[int], uin: Optional[int], condition: Optional[Condition] = None) -> None:
+    def __init__(self, *, gid: Optional[int] = None, uin: Optional[int] = None, condition: Optional[Condition] = None) -> None:
         if uin is None and gid is None:
             raise
         self.gid = gid
@@ -140,7 +142,4 @@ class Session(Trigger):
         if condition is not None:
             _condition = _condition & condition
         super().__init__(_condition, True, None, -1)
-
-    def __str__(self) -> str:
-        return style.lc('Trigger') + f'[{style.g(self.plugin.metadata.name)}.' + style.lm(self.name or hex(id(self))) + ']'
 

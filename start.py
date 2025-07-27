@@ -2,14 +2,14 @@ import chara
 
 
 if __name__ == '__main__':
-    # from chara.core import WorkerProcess
+    # from chara.core.workers import WorkerProcess
     
-    main = chara.initialize('./config.yaml')
+    core = chara.initialize('./config.yaml')
     
     # 添加额外的子进程
-    # custom_process = WorkerProcess()
-    # main.add_worker(custom_process)
+    # custom_process = WorkerProcess(core.config, 'extra')
+    # core.wm.add(custom_process)
     
-    main.run()
+    core.run()
 
 
