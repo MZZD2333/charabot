@@ -1,6 +1,5 @@
 import asyncio
 
-from dataclasses import dataclass
 from typing import Any, NoReturn, Optional, TYPE_CHECKING
 
 from chara.core.bot import Bot
@@ -17,16 +16,31 @@ if TYPE_CHECKING:
     from chara.core.plugin.trigger import Trigger, TriggerCapturedData
 
 
-@dataclass(repr=False, eq=False, slots=True)
 class Handler:
+    
+    __slots__ = ('bot', 'condition', 'exc', 'loop', 'tcd', 'trigger', '__running')
+    
     bot: Bot
     condition: Optional[Condition]
     exc: Executor[Any]
     loop: asyncio.AbstractEventLoop
     tcd: 'TriggerCapturedData'
     trigger: 'Trigger'
-    _is_running: bool = False
+    __running: bool
+    
+    def __init__(self, exc: Executor[Any], condition: Optional[Condition], trigger: 'Trigger') -> None:
+        self.exc = exc
+        self.condition = condition
+        self.trigger = trigger
+        self.__running = False
         
+    def new(self, bot: Bot, loop: asyncio.AbstractEventLoop, tcd: 'TriggerCapturedData') -> 'Handler':
+        handler = Handler(self.exc, self.condition, self.trigger)
+        handler.bot = bot
+        handler.loop = loop
+        handler.tcd = tcd
+        return handler
+
     async def send(self, message: MessageLike, at_sender: bool = False, recall_after: int = 0, user_id: Optional[int] = None, group_id: Optional[int] = None) -> str:
         '''
         ## 发送消息
@@ -73,7 +87,7 @@ class Handler:
     
     async def done(self, message: Optional[MessageLike] = None, at_sender: bool = False, recall_after: int = 0, user_id: Optional[int] = None, group_id: Optional[int] = None) -> NoReturn:
         '''
-        ## 发送消息并立即结束当前事务处理流程
+        ## 发送消息并立即结束当前事件处理流程
         
         ---
         ### 参数
@@ -88,33 +102,34 @@ class Handler:
             await self.send(message, at_sender, recall_after, user_id, group_id)
         raise HandleFinished
 
-    async def __call__(self) -> None:
+    async def __call__(self) -> int:
+        # 0 成功
+        # 1 跳过
+        # 2 失败
         log_text = colorize.handler(self)
-        if self._is_running:
+        if self.__running:
             logger.warning(log_text + '被循环调用.')
-            return
+            return 1
         
-        self._is_running = True
-        event = self.tcd.event
-        logger.info(log_text + '将处理这个事件.')
+        self.__running = True
+        params = (self.tcd.event, self, self.bot, self.trigger, self.tcd)
         try:
-            if self.condition and not await self.condition(event, self, self.bot, self.tcd):
-                return
+            if self.condition and not await self.condition(*params):
+                return 1
         except IgnoreException:
-            return
+            return 1
         except:
             logger.exception(log_text + '在检查自身条件时发生异常.')
-            return
+            return 2
         
         try:
-            if not self.exc.verify_params((event, self, self.bot, self.tcd)):
-                logger.warning(log_text + '类型验证未通过.')
-            await self.exc(event, self, self.bot, self.tcd)
+            if self.exc.verify_params(params):
+                await self.exc(*params)
             
         except IgnoreException:
-            return
+            return 1
         except:
             logger.exception(log_text + '在处理事件时发生异常.')
-            return
-        logger.success(log_text + '处理完毕.')
+            return 2
 
+        return 0

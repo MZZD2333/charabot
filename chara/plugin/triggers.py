@@ -35,15 +35,16 @@ def event_trigger(event_type: Type[Event], condition: Optional[Condition] = None
     - block: 是否阻塞低优先度触发器
     ---
     ### 触发时捕获数据结构
-    - `TriggerCatchedData`
+    - `TriggerCapturedData`
         - `event`: Event
+        - `extra`: dict
     '''
-    def checker(event: Event, context: ContextVar[TriggerCapturedData]):
+    def checker(event: Event, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
         if isinstance(event, event_type):
-            context.set(TriggerCapturedData(event=event))
+            context.set(trigger.captured_data_factory(event=event, extra=dict()))
             return True
         return False
-    return Trigger(Condition(checker) & condition, block, name, priority)
+    return Trigger(Condition(checker) & condition, block, priority, name, TriggerCapturedData)
 
 def regex_trigger(pattern: str | re.Pattern[str], flags: re.RegexFlag = re.S, condition: Optional[Condition] = None, block: bool = False, name: Optional[str] = None, priority: int = 1) -> Trigger:
     '''
@@ -60,14 +61,15 @@ def regex_trigger(pattern: str | re.Pattern[str], flags: re.RegexFlag = re.S, co
     ### 触发时捕获数据结构
     - `RegexTriggerCatchedData`
         - `event`: Event
-        - `matched`: Match[str]
+        - `extra`: dict
+        - `matched`: re.Match[str]
     '''
-    def checker(event: MessageEvent, context: ContextVar[TriggerCapturedData]) -> bool:
+    def checker(event: MessageEvent, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
         if matched := re.search(pattern, event.pure_text.strip(), flags):
-            context.set(RegexTriggerCapturedData(event=event, matched=matched))
+            context.set(trigger.captured_data_factory(event=event, extra=dict(), matched=matched))
             return True
         return False
-    return Trigger(Condition(checker) & condition, block, name, priority)
+    return Trigger(Condition(checker) & condition, block, priority, name, RegexTriggerCapturedData)
 
 def command_trigger(parser: CommandParser, condition: Optional[Condition] = None, block: bool = False, name: Optional[str] = None, priority: int = 1) -> Trigger:
     '''
@@ -83,14 +85,15 @@ def command_trigger(parser: CommandParser, condition: Optional[Condition] = None
     ### 触发时捕获数据结构
     - `CommandTriggerCatchedData`
         - `event`: Event
+        - `extra`: dict
         - `result`: ParseResult
     '''
-    def checker(event: MessageEvent, context: ContextVar[TriggerCapturedData]):
+    def checker(event: MessageEvent, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
         if result := parser.parse(event.pure_text.strip()):
-            context.set(CommandTriggerCapturedData(event=event, result=result))
+            context.set(trigger.captured_data_factory(event=event, extra=dict(), result=result))
             return True
         return False
-    return Trigger(Condition(checker) & condition, block, name, priority)
+    return Trigger(Condition(checker) & condition, block, priority, name, CommandTriggerCapturedData)
 
 
 __all__ = [

@@ -1,0 +1,3 @@
+[submodule "plugins/example"]
+	path = plugins/example
+	url = https://github.com/MZZD2333/charabot_plugin_example.git

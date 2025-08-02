@@ -16,8 +16,11 @@ ConditionCallable: TypeAlias = ExecutorCallable[bool]
 ## Condition类的检查器类型
 
 依赖参数:
-- `Bot`: 当前Bot实例
-- `Event`: 当前Event实例
+- chara.onebot.events.Event
+- chara.plugin.Bot
+- chara.plugin.Handler [Trigger的Condition不具有此项]
+- chara.plugin.Trigger
+- chara.plugin.TriggerCapturedData [不同类型的Trigger不同]
 '''
 
 MessageLike: TypeAlias = Union['Message', 'MessageSegment', str]

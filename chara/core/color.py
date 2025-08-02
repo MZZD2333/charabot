@@ -54,7 +54,7 @@ class ColorWrap:
             log += self.gid(group_id)
         if user_id := data.get('user_id', None):
             log += self.uid(user_id)
-        log += ' ' + unescape(event.raw_message)
+        log += unescape(event.raw_message)
         return log
 
     def notice_event(self, event: NoticeEvent) -> str:
@@ -116,7 +116,7 @@ class ColorWrap:
             return self.unknown_event(event)
 
     def bot(self, bot: 'Bot') -> str:
-        return f'{C256.f_005344(bot.name)}' + C256.f_005344(f'[{bot.uin}]')
+        return C256.f_faa755(bot.name) + C256.f_7bbfea(f'[{bot.uin}]')
 
     def plugin(self, plugin: 'Plugin') -> str:
         return self._const_plugin + C256.f_f8aba6(f'[{plugin.metadata.name}]')
@@ -125,10 +125,17 @@ class ColorWrap:
         return self.plugin(plugin) + C256.f_33a3dc(f'[{plugin.metadata.version}]') + C256.f_fcf16e(f'[{plugin.metadata.uuid}]')
 
     def trigger(self, trigger: 'Trigger') -> str:
-        return C256.f_f8aba6(type(trigger).__name__) + C256.f_f8aba6(f'[{trigger.plugin.metadata.name}.{trigger.name or hex(id(self))}]')
+        return C256.f_f8aba6(type(trigger).__name__) + C256.f_f8aba6(f'[{trigger.plugin.metadata.name}.{self.trigger_name(trigger)}]')
+    
+    def trigger_name(self, trigger: 'Trigger') -> str:
+        return trigger.name or hex(id(trigger))
     
     def handler(self, handler: 'Handler') -> str:
-        return f'{self._const_handler}>{self.trigger(handler.trigger)}'
+        trigger = handler.trigger
+        return self._const_handler + C256.f_f8aba6(f'[{trigger.plugin.metadata.name}.{self.trigger_name(trigger)}]')
+    
+    def handler_results(self, results: list[int]) -> str:
+        return C256.f_7fb80e(f'[SUCCESS:{results[0]}]') + C256.f_33a3dc(f'[SKIP:{results[1]}]') + C256.f_ed1941(f'[ERROR:{results[2]}]')
     
     
 colorize = ColorWrap()
