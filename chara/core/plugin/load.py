@@ -57,6 +57,10 @@ def load_plugin_group(config: PluginGroupConfig) -> None:
     
     group_config = CONTEXT_CURRENT_PLUGIN_GROUP_CONFIG.get()
     if group_config.directory == config.directory:
+        folder = config.directory.parent.absolute()
+        if not is_in_env(folder):
+            add_to_env(folder)
+        
         for plugin in PLUGINS.values():
             import_plugin(plugin)
             
@@ -65,9 +69,6 @@ def import_plugin(plugin: Plugin) -> None:
     TOKEN = CONTEXT_CURRENT_PLUGIN.set(plugin)
     
     try:
-        if not is_in_env(plugin.root_path.parent):
-            add_to_env(plugin.root_path.parent)
-        
         module = importlib.import_module(f'{plugin.root_path.parent.stem}.{plugin.root_path.stem}')
         
         if trigger_instances := inspect.getmembers(module, lambda x: isinstance(x, Trigger)):

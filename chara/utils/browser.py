@@ -10,7 +10,7 @@ from playwright.async_api import Browser as _BW
 from playwright.async_api import Playwright as _PW
 
 
-from chara.core.param import CONTEXT_LOOP
+from chara.core.hazard import CONTEXT_LOOP
 
 class _PT(_OPT):
     

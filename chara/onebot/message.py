@@ -2,9 +2,8 @@ import re
 
 from base64 import b64encode
 from io import BytesIO
-from json import JSONEncoder
 from pathlib import Path
-from typing import Any, Generator, Optional, Sequence, Union
+from typing import Any, Generator, Optional, Union
 
 from PIL.Image import Image
 
@@ -228,17 +227,4 @@ class Message:
     @property
     def array(self) -> list[dict[str, Any]]:
         return [segment.dict for segment in self]
-
-
-class MessageJSONEncoder(JSONEncoder):
-    def default(self, o: object) -> list[MessageSegment] | Any:
-        if isinstance(o, Message):
-            return o.array
-        elif isinstance(o, MessageSegment):
-            return Message(o).array
-        return super().default(o)
-
-
-def construct_forward_message(messages: Sequence[str|Message|MessageSegment], name: str = 'chara', uin: int = 999999999) -> list[dict[str, Any]]:
-    return [MessageSegment.node(name=name, uin=uin, content=msg).dict for msg in messages]
 

@@ -13,7 +13,7 @@ from chara.core.bot.nickname import NickNames
 from chara.core.bot.superuser import SuperUsers
 from chara.exception import APICallFailed
 from chara.onebot.api.base import API
-from chara.onebot.message import MessageJSONEncoder
+from chara.onebot.message import Message, MessageSegment
 from chara.typing import T
 
 
@@ -68,7 +68,7 @@ class Bot:
         if not api.startswith('/'):
             api = '/' + api
         try:
-            body = json.dumps(data, ensure_ascii=False, cls=MessageJSONEncoder).encode('utf-8')
+            body = json.dumps(data, ensure_ascii=False, cls=_MessageJSONEncoder).encode('utf-8')
             headers = Headers(self._client.headers)
             headers.update({'Content-Length': str(len(body)), 'Content-Type': 'application/json'})
             request = Request('POST', URL(self._client.base_url, path=api), headers=headers, stream=ByteStream(body))
@@ -82,3 +82,10 @@ class Bot:
         return data.get('data')
 
 
+class _MessageJSONEncoder(json.JSONEncoder):
+    def default(self, o: object) -> list[MessageSegment] | Any:
+        if isinstance(o, Message):
+            return o.array
+        elif isinstance(o, MessageSegment):
+            return Message(o).array
+        return super().default(o)

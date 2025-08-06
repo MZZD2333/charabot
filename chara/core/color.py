@@ -6,7 +6,9 @@ from chara.utils.richtext import unescape
 
 if TYPE_CHECKING:
     from chara.core.bot import Bot
-    from chara.core.plugin import Handler, Plugin, Trigger
+    from chara.core.plugin.plugin import Plugin
+    from chara.core.plugin.handler import Handler
+    from chara.core.plugin.trigger import Trigger
 
 
 class ColorWrap:

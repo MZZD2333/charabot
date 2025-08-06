@@ -1,7 +1,7 @@
-from chara.onebot.api.base import API
+from chara.onebot.api.onebot import OneBotAPI
 
 
-class LagrangeAPI(API):
+class LagrangeAPI(OneBotAPI):
     
     __slots__ = ()
 

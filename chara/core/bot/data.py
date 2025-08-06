@@ -7,13 +7,14 @@ from chara.core.bot.friend import Friends
 from chara.core.bot.group import Groups
 from chara.core.bot.nickname import NickNames
 from chara.core.bot.superuser import SuperUsers
+from chara.core.color import colorize
 from chara.core.hazard import BOTS, CONTEXT_GLOBAL_CONFIG
 from chara.core.share import shared_bot_data_update_time
-from chara.onebot.api.onebot import OneBotAPI
+from chara.log import logger
+from chara.onebot.api import OneBotAPI
 
 if TYPE_CHECKING:
     from chara.core.bot import Bot
-
 
 
 class Data:
@@ -85,24 +86,31 @@ class Data:
 
     async def update(self) -> None:
         BOT = BOTS[self.uin]
+
         # Friend
-        friends = await BOT[OneBotAPI].get_friend_list()
-        self.friends.update(friends)
+        try:
+            friends = await BOT[OneBotAPI].get_friend_list()
+            self.friends.update(friends)
+        except:
+            logger.exception(f'{colorize.bot(BOT)}更新好友数据失败.')
 
         # Groups
-        groups = await BOT[OneBotAPI].get_group_list()
-        data: dict[str, Any] = {'owned': list(), 'admin': list(), 'list': groups}
-        for gd in groups:
-            group_id = gd['group_id']
-            result = await BOT[OneBotAPI].get_group_member_info(group_id=group_id, user_id=self.uin)
-            role = result.get('role', None)
-            if role == 'owner':
-                data['owned'].append(group_id)
-            elif role == 'admin':
-                data['admin'].append(group_id)
-        
-        self.groups.update(data)
-        
+        try:
+            groups = await BOT[OneBotAPI].get_group_list()
+            data: dict[str, Any] = {'owned': list(), 'admin': list(), 'list': groups}
+            for gd in groups:
+                group_id = gd['group_id']
+                result = await BOT[OneBotAPI].get_group_member_info(group_id=group_id, user_id=self.uin)
+                role = result.get('role', None)
+                if role == 'owner':
+                    data['owned'].append(group_id)
+                elif role == 'admin':
+                    data['admin'].append(group_id)
+            
+            self.groups.update(data)
+        except:
+            logger.exception(f'{colorize.bot(BOT)}更新群聊数据失败.')
+
         self.last_update_time = time.time()
         self.save()
         self._sv_update_time.write(self.last_update_time)

@@ -35,7 +35,7 @@ async def _sender_is_group_admin(event: GroupMessageEvent) -> bool:
 async def _sender_is_group_member(event: GroupMessageEvent) -> bool:
     return event.sender.role == 'member'
 
-async def _sender_is_group_owner_or_admin(event: GroupMessageEvent) -> bool:
+async def _sender_is_owner_or_admin(event: GroupMessageEvent) -> bool:
     return event.sender.role == 'owner' or event.sender.role == 'admin'
 
 async def _bot_is_group_owner(bot: Bot, event: GroupMessageEvent) -> bool:
@@ -74,7 +74,7 @@ FRIEND_PRIVATE = Condition(_is_friend_private)
 SP_0 = Condition(_sender_is_group_owner)
 '''## 消息发送者为群主'''
 
-SP_1 = Condition(_sender_is_group_owner_or_admin)
+SP_1 = Condition(_sender_is_owner_or_admin)
 '''## 消息发送者为群主或管理员'''
 
 SP_2 = Condition(_sender_is_group_admin)
@@ -172,42 +172,16 @@ def Probability(p: float) -> Condition:
     ### 参数
     - p: 触发概率 `p∈[0, 1]`
     '''
+    assert 0 <= p <= 1
+    
+    if p == 0:
+        return Condition(lambda: False)
+    elif p == 1:
+        return Condition(lambda: True)
+    
     from random import random
     
-    async def _probability():
-        return random() <= p
-
-    return Condition(_probability)
-
-
-def RandomDelay(max: float = 1, min: float = 0) -> Condition:
-    '''
-    ## 创建一个永远为真的随机延时条件
-    
-    ---
-    ### 参数
-    - max: 最长时间
-    - min: 最短时间
-    '''
-    assert max >= min
-    time_range = max - min
-    
-    from asyncio import Future
-    from random import random
-    from chara.core.hazard import CONTEXT_LOOP
-    
-    def _finish(future: Future[None]):
-        future.set_result(None)
-    
-    async def _delay():
-        time = min + time_range * random()
-        LOOP = CONTEXT_LOOP.get()
-        future = LOOP.create_future()
-        LOOP.call_later(time, _finish, future)
-        await future
-        return True
-    
-    return Condition(_delay)
+    return Condition(lambda: random() <= p)
 
 
 __all__ = [
@@ -229,6 +203,5 @@ __all__ = [
     'Cooldown',
     'Frequency',
     'Probability',
-    'RandomDelay',
 ]
 

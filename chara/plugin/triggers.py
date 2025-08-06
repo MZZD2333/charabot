@@ -4,6 +4,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Optional, Type
 
+from chara.core.bot import Bot
 from chara.core.plugin import Condition, Trigger, TriggerCapturedData
 from chara.lib.commandparse import CommandParser, ParseResult
 from chara.onebot.events import Event, MessageEvent
@@ -39,9 +40,9 @@ def event_trigger(event_type: Type[Event], condition: Optional[Condition] = None
         - `event`: Event
         - `extra`: dict
     '''
-    def checker(event: Event, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
+    def checker(bot: Bot, event: Event, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
         if isinstance(event, event_type):
-            context.set(trigger.captured_data_factory(event=event, extra=dict()))
+            context.set(trigger.captured_data_factory(bot=bot, event=event, extra=dict()))
             return True
         return False
     return Trigger(Condition(checker) & condition, block, priority, name, TriggerCapturedData)
@@ -64,9 +65,9 @@ def regex_trigger(pattern: str | re.Pattern[str], flags: re.RegexFlag = re.S, co
         - `extra`: dict
         - `matched`: re.Match[str]
     '''
-    def checker(event: MessageEvent, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
+    def checker(bot: Bot, event: MessageEvent, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
         if matched := re.search(pattern, event.pure_text.strip(), flags):
-            context.set(trigger.captured_data_factory(event=event, extra=dict(), matched=matched))
+            context.set(trigger.captured_data_factory(bot=bot, event=event, extra=dict(), matched=matched))
             return True
         return False
     return Trigger(Condition(checker) & condition, block, priority, name, RegexTriggerCapturedData)
@@ -88,9 +89,9 @@ def command_trigger(parser: CommandParser, condition: Optional[Condition] = None
         - `extra`: dict
         - `result`: ParseResult
     '''
-    def checker(event: MessageEvent, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
+    def checker(bot: Bot, event: MessageEvent, trigger: Trigger, context: ContextVar[TriggerCapturedData]) -> bool:
         if result := parser.parse(event.pure_text.strip()):
-            context.set(trigger.captured_data_factory(event=event, extra=dict(), result=result))
+            context.set(trigger.captured_data_factory(bot=bot, event=event, extra=dict(), result=result))
             return True
         return False
     return Trigger(Condition(checker) & condition, block, priority, name, CommandTriggerCapturedData)

@@ -22,10 +22,12 @@ def initialize(config_or_path: Optional[Union[PathLike, GlobalConfig]] = None):
     log_msg = C256.f_ef5b9c('Config')
     if config_or_path is None:
         config = load_config()
-        with open('./default-config.yaml', 'w', encoding='UTF-8') as f:
+        with open('./config.yaml', 'w', encoding='UTF-8') as f:
             f.write(DEFAULT_GLOBAL_CONFIG)
-        log_msg += C256.f_009ad6('[Default]') + C256.f_00a6ac('[./default-config.yaml]')
+        log_msg += C256.f_009ad6('[Default]') + C256.f_00a6ac('[./config.yaml]')
         logger.success(log_msg + ' 已生成.')
+        logger.info('请修改配置文件后再次启动.')
+        exit(0)
     
     elif isinstance(config_or_path, GlobalConfig):
         config = config_or_path

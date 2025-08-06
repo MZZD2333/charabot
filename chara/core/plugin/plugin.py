@@ -5,8 +5,8 @@ from typing import Any, Optional, Union
 
 from chara.core.bot import Bot
 from chara.core.color import colorize
-from chara.core.share import shared_plugin_state
 from chara.core.plugin.trigger import Trigger
+from chara.core.share import shared_plugin_state
 from chara.log import logger
 from chara.lib.executor import Executor
 from chara.onebot.events import Event

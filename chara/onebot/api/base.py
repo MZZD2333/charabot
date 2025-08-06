@@ -1,8 +1,10 @@
-from typing import Any, Optional
+from typing import NoReturn
+
 
 class API:
     
     __slots__ = ()
 
-    async def call_api(self, api: str, **data: Any) -> Optional[dict[Any, Any]]:
-        '''## 调用API'''
+    def __getattr__(self, name: str) -> NoReturn:
+        raise Exception(f'请使用bot[{type(self).__name__}].{name}调用.')
+

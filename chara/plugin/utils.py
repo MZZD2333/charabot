@@ -6,7 +6,6 @@ from chara.core.plugin.plugin import Plugin
 from chara.core.workers.manager import Worker
 
 
-
 def get_current_plugin() -> Plugin:
     '''
     ## 获取当前插件(仅插件导入时可调用)

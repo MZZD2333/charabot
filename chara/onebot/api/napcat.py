@@ -1,7 +1,7 @@
-from chara.onebot.api.base import API
+from chara.onebot.api.onebot import OneBotAPI
 
 
-class NapCatAPI(API):
+class NapCatAPI(OneBotAPI):
     
     __slots__ = ()
 

@@ -6,7 +6,7 @@ from chara.onebot.message import Message
 
 
 class Sender(BaseModel):
-    '''发送者'''
+    '''## 发送者'''
     model_config = ConfigDict(extra='ignore')
 
     user_id: int
@@ -21,7 +21,7 @@ class Sender(BaseModel):
 
 
 class Status(BaseModel):
-    '''状态'''
+    '''## 状态'''
     model_config = ConfigDict(extra='ignore')
     
     online: bool
@@ -29,7 +29,7 @@ class Status(BaseModel):
 
 
 class File(BaseModel):
-    '''文件'''
+    '''## 文件'''
     model_config = ConfigDict(extra='ignore')
 
     name: str
@@ -38,7 +38,7 @@ class File(BaseModel):
 
 
 class Event(BaseModel):
-    '''基础事件'''
+    '''## 基础事件'''
     model_config = ConfigDict(extra='ignore', arbitrary_types_allowed=True)
 
     time: int
@@ -49,7 +49,7 @@ class Event(BaseModel):
 
 
 class MessageEvent(Event):
-    '''消息事件'''
+    '''## 消息事件'''
     post_type: str = 'message_type'
     message_type: str
     sub_type: str
@@ -68,44 +68,56 @@ class MessageEvent(Event):
 
     @property
     def pure_text(self):
-        '''不含CQCode的纯文本消息'''
+        '''## 不含CQCode的纯文本消息'''
         return ''.join([segment.data['text'] for segment in self.message.segments if segment.type == 'text'])
 
 
 class GroupMessageEvent(MessageEvent):
-    '''群消息事件'''
+    '''## 群消息事件'''
     message_type: str = 'group'
     sub_type: str
     group_id: int
 
     @property
-    def at_ids(self):
-        '''获取消息内被at的所有人的id'''
-        return [segment.data['qq'] for segment in self.message.segments if segment.type == 'at']
+    def at_ids(self) -> list[int]:
+        '''
+        ## 获取消息内被at的所有人的id
+        
+        不包含at全体成员
+        '''
+        return [int(qq) for segment in self.message.segments if segment.type == 'at' and (qq := segment.data['qq']) != 'all']
+    
+    @property
+    def at_all(self) -> bool:
+        '''## 获取消息是否at全体成员'''
+        for segment in self.message.segments:
+            if segment.type == 'at' and segment.data['qq'] == 'all':
+                return True
+        return False
 
 
 class PrivateMessageEvent(MessageEvent):
-    '''私聊消息事件'''
+    '''## 私聊消息事件'''
     message_type: str = 'private'
     sub_type: str
 
 
 # Notice Event
 class NoticeEvent(Event):
-    '''通知事件'''
+    '''## 通知事件'''
     post_type: str = 'notice_type'
     notice_type: str
 
 
 class GroupUploadNoticeEvent(NoticeEvent):
-    '''群文件上传事件'''
+    '''## 群文件上传事件'''
     notice_type: str = 'group_upload'
     user_id: int
     group_id: int
 
 
 class GroupAdminNoticeEvent(NoticeEvent):
-    '''群管理员变动事件'''
+    '''## 群管理员变动事件'''
     notice_type: str = 'group_admin'
     sub_type: str
     user_id: int
@@ -113,7 +125,7 @@ class GroupAdminNoticeEvent(NoticeEvent):
 
 
 class GroupDecreaseNoticeEvent(NoticeEvent):
-    '''群成员减少事件'''
+    '''## 群成员减少事件'''
     notice_type: str = 'group_decrease'
     sub_type: str
     user_id: int
@@ -122,7 +134,7 @@ class GroupDecreaseNoticeEvent(NoticeEvent):
 
 
 class GroupIncreaseNoticeEvent(NoticeEvent):
-    '''群成员增加事件'''
+    '''## 群成员增加事件'''
     notice_type: str = 'group_increase'
     sub_type: str
     user_id: int
@@ -131,7 +143,7 @@ class GroupIncreaseNoticeEvent(NoticeEvent):
 
 
 class GroupBanNoticeEvent(NoticeEvent):
-    '''群禁言事件'''
+    '''## 群禁言事件'''
     notice_type: str = 'group_ban'
     sub_type: str
     user_id: int
@@ -141,13 +153,13 @@ class GroupBanNoticeEvent(NoticeEvent):
 
 
 class FriendAddNoticeEvent(NoticeEvent):
-    '''好友添加事件'''
+    '''## 好友添加事件'''
     notice_type: str = 'friend_add'
     user_id: int
 
 
 class GroupRecallNoticeEvent(NoticeEvent):
-    '''群消息撤回事件'''
+    '''## 群消息撤回事件'''
     notice_type: str = 'group_recall'
     user_id: int
     group_id: int
@@ -156,14 +168,14 @@ class GroupRecallNoticeEvent(NoticeEvent):
 
 
 class FriendRecallNoticeEvent(NoticeEvent):
-    '''好友消息撤回事件'''
+    '''## 好友消息撤回事件'''
     notice_type: str = 'friend_recall'
     user_id: int
     message_id: int
 
 
 class GroupCardUpdateEvent(NoticeEvent):
-    '''群成员名片更新'''
+    '''## 群成员名片更新'''
     notice_type: str = 'group_card'
     user_id: int
     group_id: int
@@ -172,14 +184,14 @@ class GroupCardUpdateEvent(NoticeEvent):
 
 
 class ReceivedOfflineFileEvent(NoticeEvent):
-    '''接收到离线文件事件'''
+    '''## 接收到离线文件事件'''
     notice_type: str = 'offline_file'
     user_id: int
     file: File
 
 
 class EssenceEvent(NoticeEvent):
-    '''精华消息变更事件'''
+    '''## 精华消息变更事件'''
     notice_type: str = 'essence'
     sub_type: str
     group_id: int
@@ -189,7 +201,7 @@ class EssenceEvent(NoticeEvent):
 
 
 class NotifyEvent(NoticeEvent):
-    '''提醒事件'''
+    '''## 提醒事件'''
     notice_type: str = 'notify'
     sub_type: str
     user_id: Optional[int] = None
@@ -197,32 +209,32 @@ class NotifyEvent(NoticeEvent):
 
 
 class PokeNotifyEvent(NotifyEvent):
-    '''戳一戳提醒事件'''
+    '''## 戳一戳提醒事件'''
     sub_type: str = 'poke'
     target_id: int
 
 
 class LuckyKingNotifyEvent(NotifyEvent):
-    '''群红包运气王提醒事件'''
+    '''## 群红包运气王提醒事件'''
     sub_type: str = 'lucky_king'
     target_id: int
 
 
 class HonorNotifyEvent(NotifyEvent):
-    '''群荣誉变更提醒事件'''
+    '''## 群荣誉变更提醒事件'''
     sub_type: str = 'honor'
     honor_type: str
 
 
 # Request Event
 class RequestEvent(Event):
-    '''请求事件'''
+    '''## 请求事件'''
     post_type: str = 'request_type'
     request_type: str
 
 
 class FriendRequestEvent(RequestEvent):
-    '''加好友请求事件'''
+    '''## 加好友请求事件'''
     request_type: str = 'friend'
     user_id: int
     comment: Optional[str] = None
@@ -230,7 +242,7 @@ class FriendRequestEvent(RequestEvent):
 
 
 class GroupRequestEvent(RequestEvent):
-    '''加群请求/邀请事件'''
+    '''## 加群请求/邀请事件'''
     request_type: str = 'group'
     sub_type: str
     group_id: int
@@ -241,20 +253,20 @@ class GroupRequestEvent(RequestEvent):
 
 # Meta Event
 class MetaEvent(Event):
-    '''元事件'''
+    '''## 元事件'''
     post_type: str = 'meta_event_type'
     meta_event_type: str
 
 
 class HeartbeatMetaEvent(MetaEvent):
-    '''心跳事件'''
+    '''## 心跳事件'''
     meta_event_type: str = 'heartbeat'
     interval: int
     status: Status
 
 
 class LifecycleMetaEvent(MetaEvent):
-    '''生命周期事件'''
+    '''## 生命周期事件'''
     meta_event_type: str = 'lifecycle'
     sub_type: str
 

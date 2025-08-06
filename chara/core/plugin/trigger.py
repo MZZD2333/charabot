@@ -1,7 +1,7 @@
 from asyncio import AbstractEventLoop
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Optional, NoReturn, overload, TYPE_CHECKING
+from typing import Any, Callable, Generator, NoReturn, Optional, overload, TYPE_CHECKING
 
 from chara.core.bot import Bot
 from chara.core.color import colorize
@@ -23,6 +23,8 @@ class TriggerCapturedData:
     '''
     ## 触发器触发时捕获数据
     '''
+    
+    bot: Bot
     event: Event
     extra: dict[str, Any]
 
@@ -42,7 +44,7 @@ class Trigger:
     priority: int
     captured_data_factory: Callable[..., TriggerCapturedData]
 
-    def __init__(self, condition: Condition, block: bool = False, priority: int = 0, name: Optional[str] = None, captured_data_factory: Optional[Callable[..., TriggerCapturedData]] = None) -> None:
+    def __init__(self, condition: Condition, block: bool = False, priority: int = 0, name: Optional[str] = None, captured_data_factory: Callable[..., TriggerCapturedData] = TriggerCapturedData) -> None:
         '''
         ## 创建一个触发器
         
@@ -59,7 +61,7 @@ class Trigger:
         self.name = name
         self.priority = priority
         self.handlers = list()
-        self.captured_data_factory = captured_data_factory or TriggerCapturedData
+        self.captured_data_factory = captured_data_factory
 
     def kill(self) -> NoReturn:
         self.alive = False
@@ -125,11 +127,12 @@ class Trigger:
         if not self.alive:
             return
         
+        loop = CONTEXT_LOOP.get()
         temp_context_tcd: ContextVar[Optional[TriggerCapturedData]] = ContextVar('temp_context_tcd', default=None)
         try:
             if await self.condition(event, self, bot, temp_context_tcd):
                 if (tcd := temp_context_tcd.get()) is None:
-                    tcd = self.captured_data_factory(event=event, extra=dict())
+                    tcd = self.captured_data_factory(bot=bot, event=event, extra=dict())
             else:
                 return
         
@@ -143,7 +146,6 @@ class Trigger:
         finally:
             del temp_context_tcd
         
-        loop = CONTEXT_LOOP.get()
         loop.create_task(self._handle(self.handlers.copy(), bot, loop, tcd))
     
     async def _handle(self, handlers: list[Handler], bot: Bot, loop: AbstractEventLoop, tcd: TriggerCapturedData) -> None:

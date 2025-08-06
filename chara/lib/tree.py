@@ -9,7 +9,6 @@ class Node:
     parent: Optional['Node']
     subnodes: dict[Any, 'Node']
     
-
     def __init__(self, value: Any = None, parent: Optional['Node'] = None) -> None:
         self.value = value
         self.parent = parent

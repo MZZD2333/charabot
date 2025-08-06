@@ -31,3 +31,5 @@ MessageLike: TypeAlias = Union['Message', 'MessageSegment', str]
 - `str`
 '''
 
+Number: TypeAlias = Union[str, int]
+
