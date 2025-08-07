@@ -29,7 +29,9 @@ class SharedValue(Generic[T]):
         return self._read(bytes(self._sm.buf[:self._size]))
     
     def write(self, data: T) -> None:
-        self._sm.buf[:self._size] = self._write(data)
+        buf = self._write(data)
+        length = len(buf)
+        self._sm.buf[:length] = buf
     
     def close(self) -> None:
         self._sm.close()
@@ -64,4 +66,20 @@ def shared_bot_data_update_time(name: str, default: float = 0) -> SharedValue[fl
         return pack('>d', data)
     
     return SharedValue(name, 8, default, read, write)
+    
+def shared_bot_protocol(name: str, default: str = 'Unknown') -> SharedValue[str]:
+    def read(data: bytes) -> str:
+        length = unpack('>B', data[:1])[0]
+        return unpack(f'>{length}s', data[1:1+length])[0].decode('UTF-8', 'ignore')
+    
+    def write(data: str) -> bytes:
+        encode = data.encode('UTF-8')
+        length = len(encode)
+        if length <= 127:
+            return pack(f'>B{length}s', length, encode)
+        encode = encode[:127].decode('UTF-8', 'ignore').rstrip('\uFFFD').encode('UTF-8')
+        length = len(encode)
+        return pack(f'>B{length}s', length, encode)
+    
+    return SharedValue(name, 128, default, read, write)
     

@@ -3,10 +3,10 @@ import time
 
 from typing import Any, TYPE_CHECKING
 
-from chara.core.bot.friend import Friends
-from chara.core.bot.group import Groups
-from chara.core.bot.nickname import NickNames
-from chara.core.bot.superuser import SuperUsers
+from chara.core.bot.data.friend import Friends
+from chara.core.bot.data.group import Groups
+from chara.core.bot.data.nickname import NickNames
+from chara.core.bot.data.superuser import SuperUsers
 from chara.core.color import colorize
 from chara.core.hazard import BOTS, CONTEXT_GLOBAL_CONFIG
 from chara.core.share import shared_bot_data_update_time
@@ -42,7 +42,7 @@ class Data:
         self.path.mkdir(parents=True, exist_ok=True)
 
         self.last_update_time = -1
-        self._sv_update_time = shared_bot_data_update_time(str(self.uin))
+        self._sv_update_time = shared_bot_data_update_time(f'bot_update_time_{self.uin}')
         self.load()
 
     @property

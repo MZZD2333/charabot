@@ -44,9 +44,9 @@ class ColorWrap:
         data = event.model_dump()
         log = self._const_event_meta
         if sub_type := data.get('sub_type', None):
-            log += C256.f_003a6c(f'[{event.meta_event_type}.{sub_type}]')
+            log += C256.f_fcf16e(f'[{event.meta_event_type}.{sub_type}]')
         else:
-            log += C256.f_003a6c(f'[{event.meta_event_type}]')
+            log += C256.f_fcf16e(f'[{event.meta_event_type}]')
         return log
 
     def message_event(self, event: MessageEvent) -> str:
@@ -71,9 +71,9 @@ class ColorWrap:
         if target_id := data.get('target_id', None):
             log += self.tid(target_id)
         if sub_type := data.get('sub_type', None):
-            log += C256.f_003a6c(f'[{event.notice_type}.{sub_type}]')
+            log += C256.f_fcf16e(f'[{event.notice_type}.{sub_type}]')
         else:
-            log += C256.f_003a6c(f'[{event.notice_type}]')
+            log += C256.f_fcf16e(f'[{event.notice_type}]')
         return log
 
     def request_event(self, event: RequestEvent) -> str:
@@ -85,9 +85,9 @@ class ColorWrap:
             log += self.uid(user_id)
         if request_type := data.get('request_type', None):
             if sub_type := data.get('sub_type', None):
-                log += C256.f_003a6c(f'[{request_type}.{sub_type}]')
+                log += C256.f_fcf16e(f'[{request_type}.{sub_type}]')
             else:
-                log += C256.f_003a6c(f'[{request_type}]')
+                log += C256.f_fcf16e(f'[{request_type}]')
         return log
 
     def unknown_event(self, event: Event) -> str:
@@ -102,7 +102,7 @@ class ColorWrap:
         if target_id := data.get('target_id', None):
             log += self.oid(target_id)
         if sub_type := data.get('sub_type', None):
-            log += C256.f_003a6c(f'[{sub_type}]')
+            log += C256.f_fcf16e(f'[{sub_type}]')
         return log
 
     def event(self, event: Event) -> str:
@@ -119,6 +119,9 @@ class ColorWrap:
 
     def bot(self, bot: 'Bot') -> str:
         return C256.f_faa755(bot.name) + C256.f_7bbfea(f'[{bot.uin}]')
+
+    def bot_protocol(self, protocol: str) -> str:
+        return C256.f_ef5b9c(f'[{protocol}]')
 
     def plugin(self, plugin: 'Plugin') -> str:
         return self._const_plugin + C256.f_f8aba6(f'[{plugin.metadata.name}]')

@@ -1,20 +1,30 @@
+import json
 import re
 
 from base64 import b64encode
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Generator, Optional, Union
+from typing import Any, Generator, Optional, Union, overload
 
 from PIL.Image import Image
 
 
 class MessageSegment:
     '''## 消息段'''
+    
     __slots__ = ('type', 'data')
+    
+    data: dict[str, Any]
 
     def __init__(self, type: str, data: dict[str, Any]) -> None:
         self.type = type
-        self.data: dict[str, Any] = {k: self._escape(v) for k, v in data.items()}
+        if self.type == 'json':
+            if raw_data := data.get('data', None):
+                self.data = json.loads(raw_data)
+            else:
+                self.data = {k: self._escape(v) for k, v in data.items()}
+        else:
+            self.data = {k: self._escape(v) for k, v in data.items()}
     
     def __str__(self) -> str:
         return str(self.cqcode)
@@ -181,13 +191,14 @@ class Message:
     def _construct(message: str):
         def _iter_message(message: str):
             seq = 0
-            for MessageSegment in re.finditer(r'\[CQ:(?P<type>\w+),?(?P<data>(?:\w+=[^,\[\]]+,?)*)\]', message):
-                if seq < (k := MessageSegment.start()):
+            for matched in re.finditer(r'\[CQ:(?P<type>\w+),?(?P<data>(?:\w+=[^,\[\]]+,?)*)\]', message):
+                if seq < (k := matched.start()):
                     yield 'text', message[seq : k]
-                yield MessageSegment.group('type'), MessageSegment.group('data') or ''
-                seq = MessageSegment.end()
+                yield matched.group('type'), matched.group('data') or ''
+                seq = matched.end()
             if seq+1 < len(message):
                 yield 'text', message[seq:]
+        
         for type_, data in _iter_message(message):
             if type_ == 'text':
                 cqtext = MessageSegment(type_, {'text': data})
@@ -199,6 +210,15 @@ class Message:
     def __iter__(self) -> Generator[MessageSegment, Any, None]:
         for segment in self.segments:
             yield segment
+    
+    @overload
+    def __getitem__(self, v: int) -> MessageSegment:...
+
+    @overload
+    def __getitem__(self, v: slice) -> list[MessageSegment]:...
+
+    def __getitem__(self, v: Union[int, slice]) -> Union[MessageSegment, list[MessageSegment]]:
+        return self.segments[v]
 
     def __str__(self) -> str:
         return ''.join([str(segment) for segment in self.segments])

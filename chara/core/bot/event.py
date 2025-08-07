@@ -66,7 +66,7 @@ def get_event(json_data: dict[str, Any]) -> Event | None:
             if event.message.array and (cqcode := event.message.segments[0]).type == 'reply':
                 event.reply_id = cqcode.data.get('id')
             if isinstance(event, GroupMessageEvent):
-                event.at_me = str(event.self_id) in event.at_ids                        
+                event.at_me = event.self_id in event.at_ids                        
             else:
                 event.at_me = True
         return event

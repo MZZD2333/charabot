@@ -6,8 +6,9 @@ from fastapi.websockets import WebSocket, WebSocketDisconnect
 from chara.config import GlobalConfig
 from chara.core.bot.event import BotConnectedEvent, BotDisConnectedEvent, get_event
 from chara.core.color import colorize
-from chara.core.hazard import BOTS, CONTEXT_LOOP
+from chara.core.hazard import BOTS
 from chara.log import logger
+from chara.onebot.api.onebot import OneBotAPI
 from chara.onebot.events import MetaEvent
 
 if TYPE_CHECKING:
@@ -35,20 +36,23 @@ class WebSocketServer:
         data: dict[str, Any] = await websocket.receive_json()
         if event := get_event(data):
             if bot := BOTS.get(event.self_id, None):
-                logger.success(f'{colorize.bot(bot)}已连接.')
+                try:
+                    info = await bot[OneBotAPI].get_version_info()
+                except:
+                    logger.exception(f'{colorize.bot(bot)}协议没有实现[/get_version_info]API.')
+                    return
+                bot.protocol.name = info.get('app_name', 'Unknown')
+                logger.success(f'{colorize.bot(bot)}{colorize.bot_protocol(bot.protocol.name)}已连接.')
+            
             else:
                 logger.warning(f'与配置文件不相符的账号{colorize.uid(event.self_id)}, 请检测配置文件.')
                 return
+        
         else:
             logger.warning(f'未知的客户端信息.\n{data}')
             return
         
         bot.connected = True
-
-        LOOP = CONTEXT_LOOP.get()
-        if not bot.data.updated:
-            LOOP.create_task(bot.data.update())
-
         await self.core.wm.dispatch(BotConnectedEvent(bot.uin))
         try:
             while True:
@@ -61,11 +65,8 @@ class WebSocketServer:
                     
                     await self.core.wm.dispatch(event)
                     
-                    if event.time - bot.data.last_update_time > 3600:
-                        LOOP.create_task(bot.data.update())
-                    
         except WebSocketDisconnect:
-            logger.warning(f'{colorize.bot(bot)}断开连接.')
+            logger.warning(f'{colorize.bot(bot)}{colorize.bot_protocol(bot.protocol.name)}断开连接.')
 
         await self.core.wm.dispatch(BotDisConnectedEvent(bot.uin))        
         bot.connected = False
