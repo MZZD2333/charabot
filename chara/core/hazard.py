@@ -47,3 +47,6 @@ PLUGINS: dict[str, 'Plugin'] = dict()
 PLUGIN_GROUPS: dict[str, dict[str, 'Plugin']] = dict()
 '''## 所有分组下的插件(仅含插件信息)'''
 
+PLUGIN_CUSTOM_CONFIGS: dict[str, dict[str, Any]] = dict()
+'''## 所有插件自定义配置'''
+

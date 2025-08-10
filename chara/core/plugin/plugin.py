@@ -14,7 +14,7 @@ from chara.typing import ExecutorCallable
 
 
 @dataclass(eq=False, repr=False, slots=True)
-class MetaData:
+class PlugiMetaData:
     name: str
     uuid: str
     description: str
@@ -90,17 +90,23 @@ class PluginTaskManager:
 
 class Plugin:
     
-    __slots__ = ('index', 'group', 'metadata', 'data_path', 'root_path', 'triggers', 'tm', '_sv_state')
+    __slots__ = ('config', 'index', 'group', 'metadata', 'data_path', 'root_path', 'triggers', 'tm', '_sv_state')
     
+    config: dict[str, Any]
     index: int
+    '''## 插件编号(导入顺序)'''
     group: str
-    metadata: MetaData
+    '''## 插件组名称'''
+    metadata: PlugiMetaData
     data_path: Path
+    '''## 数据目录'''
     root_path: Path
+    '''## 插件目录'''
     triggers: list[Trigger]
     tm: PluginTaskManager
     
-    def __init__(self, metadata: MetaData) -> None:
+    def __init__(self, metadata: PlugiMetaData) -> None:
+        self.config = dict()
         self.metadata = metadata
         self.triggers = list()
         self.tm = PluginTaskManager(self)
